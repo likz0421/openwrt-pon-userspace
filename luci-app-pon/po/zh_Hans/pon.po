@@ -998,3 +998,6 @@ msgstr "当前运行的 OAM 代理未上报该实际值。"
 
 msgid "The port count is embedded in the 26-byte ONU capabilities attribute."
 msgstr "端口数量嵌在 26 字节的 ONU 能力属性中上报。"
+
+msgid "Optical module"
+msgstr "光模块"
