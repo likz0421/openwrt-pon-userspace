@@ -35,7 +35,11 @@
 
 ## 四、外部优化候选池
 
-2026-11-25 对上游三仓库 issue/PR 与社区 fork 做全量审计（141 条 issue/PR、约 230 个 fork，37 个活跃 fork 逐提交对比）。本节只登记、不合入：是否合入 bugfix 后续逐项拍板；拍板合入后按单项单提交移植进第二节，并从本节标注去向。状态口径：`候选`＝值得移植、待拍板；`关注`＝场景不符或未证实、保持跟踪；`拒绝`＝不适用，留原因避免重复评估。上游 PR 的提交 ID 为审计时 `refs/pull/<N>/head` 的 head，PR 后续更新需在移植前重取。
+2026-11-25 对上游三仓库 issue/PR 与社区 fork 做全量审计（141 条 issue/PR、约 230 个 fork，37 个活跃 fork 逐提交对比）。本节只登记、不合入：是否合入 bugfix 后续逐项拍板；拍板合入后按单项单提交移植进第二节，并从本节标注去向。
+
+评估口径为 AN7581 全系列（含 WiFi 变体与 EPON/XGS-PON 变体），不限于本机 XG-040G-MD；`拒绝` 仅留给非 AN7581 芯片或硬件波长不兼容。
+
+状态口径：`候选`＝值得移植、待拍板；`关注`＝场景不符或未证实、保持跟踪；`拒绝`＝不适用，留原因避免重复评估。上游 PR 的提交 ID 为审计时 `refs/pull/<N>/head` 的 head，PR 后续更新需在移植前重取。
 
 ### 上游 pbs05/openwrt-pon-userspace 未合入 PR
 
@@ -62,5 +66,5 @@
 
 | 候选项 | 来源 | 提交 ID | 状态 | 备注 |
 |---|---|---|---|---|
-| ALCL OLT 缺 ME 实例 | [#15](https://github.com/pbs05/openwrt-pon-userspace/issues/15) | —（issue 内含已验证修复代码） | 关注 | 诺基亚/ALCL OLT 场景；本机 OLT 非 ALCL，换局端时再评估 |
+| ALCL OLT 缺 ME 实例 | [#15](https://github.com/pbs05/openwrt-pon-userspace/issues/15) | —（issue 内含已验证修复代码） | 候选 | 适用接诺基亚/ALCL OLT 的 AN7581 系列设备；本机 OLT 非 ALCL，移植时从 issue 取代码 |
 | 组播 GEM 泛洪 | [#8](https://github.com/pbs05/openwrt-pon-userspace/issues/8) | — | 关注 | 关联 PonWrt#88；IPTV 组播场景，现方案未受影响 |
