@@ -451,6 +451,65 @@ function renderOam(item) {
 	return statusTable(title, rows);
 }
 
+/* Dashboard: compact at-a-glance cards above the detailed tables. */
+var DASH_CSS = [
+	'.pon-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:12px 0 18px}',
+	'.pon-card{border:1px solid var(--border-color,rgba(0,0,0,.15));border-left:4px solid var(--border-color,rgba(0,0,0,.3));border-radius:8px;padding:12px 14px;background:var(--background-color-primary,#fff)}',
+	'.pon-card.pon-ok{border-left-color:#2ecc71}.pon-card.pon-warn{border-left-color:#f39c12}.pon-card.pon-err{border-left-color:#e74c3c}',
+	'.pon-card-title{font-weight:600;margin-bottom:8px}.pon-card-mode{font-size:12px;color:var(--text-color-secondary,#888)}',
+	'.pon-metric{display:flex;justify-content:space-between;gap:8px;font-size:13px;line-height:1.7}',
+	'.pon-metric-label{color:var(--text-color-secondary,#888)}.pon-metric-value{font-weight:500;text-align:right}',
+	'.pon-badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;background:rgba(0,0,0,.06)}',
+	'.pon-badge.pon-ok{background:rgba(46,204,113,.16);color:#1e8449}',
+	'.pon-badge.pon-warn{background:rgba(243,156,18,.16);color:#b9770e}',
+	'.pon-badge.pon-err{background:rgba(231,76,60,.16);color:#c0392b}',
+	'@media(prefers-color-scheme:dark){.pon-card{background:rgba(255,255,255,.05)}.pon-badge.pon-ok{color:#2ecc71}.pon-badge.pon-warn{color:#f39c12}.pon-badge.pon-err{color:#e74c3c}}'
+].join('');
+
+function dashTone(lifecycle, error) {
+	if (error || lifecycle === 'error')
+		return 'pon-err';
+	if (lifecycle === 'operational')
+		return 'pon-ok';
+	if (!lifecycle || lifecycle === 'stopped')
+		return 'pon-warn';
+	return 'pon-warn';
+}
+
+function dashMetric(label, value) {
+	return E('div', { 'class': 'pon-metric' }, [
+		E('span', { 'class': 'pon-metric-label' }, label),
+		E('span', { 'class': 'pon-metric-value' }, value)
+	]);
+}
+
+function renderDashboard(data) {
+	var cards = [];
+	data.lines.forEach(function(item) {
+		var line = item.line || {};
+		var frontend = item.frontend || {};
+		var mode = getLineModes(item);
+		var tone = dashTone(line.lifecycle, item.error);
+		var rx = frontend.error ? _('Read failed') :
+			(Object.prototype.hasOwnProperty.call(frontend, 'rx_power_dbm') ?
+				Number(frontend.rx_power_dbm).toFixed(2) + ' dBm' : _('Not supported'));
+		cards.push(E('div', { 'class': 'pon-card ' + tone }, [
+			E('div', { 'class': 'pon-card-title' }, [
+				item.section['.name'],
+				E('span', { 'class': 'pon-badge ' + tone }, ' ' + displayLifecycle(line.lifecycle))
+			]),
+			E('div', { 'class': 'pon-card-mode' }, modeLabel(mode.shown) + ' · ' + (item.section.device || '-')),
+			dashMetric(_('Line state'), displayLifecycle(line.lifecycle)),
+			dashMetric(_('Receive optical power'), rx),
+			dashMetric(_('Optical signal'), displayBoolean(line.optical_signal)),
+			dashMetric(_('Service ready'), (item.datapath || {}).service_ready === true ? _('Yes') : _('No'))
+		]));
+	});
+	if (!cards.length)
+		return E('div');
+	return E('div', { 'class': 'pon-dashboard' }, cards);
+}
+
 function renderStatus(data) {
 	var nodes = [];
 	var activeModes = {};
@@ -481,9 +540,13 @@ return view.extend({
 	},
 
 	render: function(data) {
+		var dashboard = E('div', { 'id': 'pon-dashboard' }, renderDashboard(data));
 		var container = E('div', { 'id': 'pon-status' }, renderStatus(data));
 		var root = E('div', { 'class': 'cbi-map' }, [
-			E('h2', {}, _('PON status')), container
+			E('style', {}, DASH_CSS),
+			E('h2', {}, _('PON status')),
+			dashboard,
+			container
 		]);
 
 		poll.add(function() {
@@ -495,6 +558,7 @@ return view.extend({
 					if (node.open)
 						opened[node.getAttribute('data-pon-details')] = true;
 				});
+				dom.content(dashboard, renderDashboard(status));
 				dom.content(container, renderStatus(status));
 				container.querySelectorAll('details[data-pon-details]').forEach(function(node) {
 					node.open = opened[node.getAttribute('data-pon-details')] === true;

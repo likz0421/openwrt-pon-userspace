@@ -238,6 +238,8 @@ fn print_help() {
          \n\
          Usage:\n\
          \x20 ponctl list\n\
+         \x20 ponctl status --all --json\n\
+         \x20 ponctl version --json\n\
          \x20 ponctl [--device ponX] status [--json]\n\
          \x20 ponctl [--device ponX] control|identity\n\
          \x20 ponctl [--device ponX] mode [show]\n\
@@ -291,6 +293,47 @@ fn run() -> Result<()> {
                 },
                 device.xpon_path.display()
             );
+        }
+        return Ok(());
+    }
+
+    // Versioned metadata for the UI's update checker. No device needed.
+    if command == "version" && arguments.len() == 2 && arguments[1] == "--json" {
+        println!(
+            "{{\"schema_version\":1,\"name\":\"ponctl\",\"version\":{},\"project_url\":{}}}",
+            status::json_quote(VERSION),
+            status::json_quote(PROJECT_URL)
+        );
+        return Ok(());
+    }
+
+    // Aggregate all PON lines in one call. The inner snapshots keep the v1
+    // shape used by the status page; only the envelope is v2.
+    if command == "status"
+        && arguments.len() == 3
+        && arguments[1] == "--all"
+        && arguments[2] == "--json"
+    {
+        if requested_device.is_some() {
+            return Err("status --all does not accept --device".into());
+        }
+        let devices = discover_pon_devices()?;
+        let mut lines = Vec::new();
+        let mut errors = Vec::new();
+        for device in devices {
+            match line_ifindex(&device).and_then(|id| {
+                netlink::get_status(id).map_err(|e| -> Box<dyn Error> { Box::new(e) })
+            }) {
+                Ok(mut snapshot) => {
+                    status::convert_optics(&mut snapshot);
+                    lines.push((device.name, snapshot));
+                }
+                Err(error) => errors.push(format!("{}: {error}", device.name)),
+            }
+        }
+        println!("{}", status::aggregate_json(VERSION, &lines));
+        if !errors.is_empty() {
+            eprintln!("status --all partial: {}", errors.join("; "));
         }
         return Ok(());
     }

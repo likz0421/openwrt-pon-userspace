@@ -944,3 +944,183 @@ msgstr "数据通道等待 PLOAM 分配 Alloc-ID 的秒数，超过后报告失�
 
 msgid "Optical module"
 msgstr "光模块"
+
+msgid "PON configuration backup"
+msgstr "PON 配置备份"
+
+msgid "Export the PON configuration to a file, or restore it from a previously exported file. Imported files are validated before they are applied."
+msgstr "将 PON 配置导出为文件，或从之前导出的文件恢复。导入前会校验文件格式。"
+
+msgid "Export"
+msgstr "导出"
+
+msgid "Download the current PON configuration as a text file."
+msgstr "将当前 PON 配置下载为文本文件。"
+
+msgid "Export configuration"
+msgstr "导出配置"
+
+msgid "PON configuration exported."
+msgstr "PON 配置已导出。"
+
+msgid "PON config export failed: %s"
+msgstr "PON 配置导出失败：%s"
+
+msgid "Import"
+msgstr "导入"
+
+msgid "Choose a previously exported PON configuration file. The current configuration is backed up first."
+msgstr "选择之前导出的 PON 配置文件。当前配置会先自动备份。"
+
+msgid "Import configuration"
+msgstr "导入配置"
+
+msgid "PON configuration imported. Restart the PON service to apply it."
+msgstr "PON 配置已导入。重启 PON 服务使其生效。"
+
+msgid "A backup of the previous configuration was saved to %s."
+msgstr "之前的配置已备份到 %s。"
+
+msgid "Restore last backup"
+msgstr "恢复上次备份"
+
+msgid "Restore the configuration that was backed up during the last import."
+msgstr "恢复上次导入时备份的配置。"
+
+msgid "Restore backup"
+msgstr "恢复备份"
+
+msgid "Previous PON configuration restored."
+msgstr "已恢复之前的 PON 配置。"
+
+msgid "PON config restore failed: %s"
+msgstr "PON 配置恢复失败：%s"
+
+msgid "PON config import failed: file is empty or too large."
+msgstr "PON 配置导入失败：文件为空或过大。"
+
+msgid "PON config import failed: invalid line %d."
+msgstr "PON 配置导入失败：第 %d 行格式错误。"
+
+msgid "PON config import failed: no PON sections found."
+msgstr "PON 配置导入失败：未找到 PON 配置段。"
+
+msgid "PON config import failed: %s"
+msgstr "PON 配置导入失败：%s"
+
+msgid "PON line: %s (%s)"
+msgstr "PON 线路：%s（%s）"
+
+msgid "Export status JSON"
+msgstr "导出状态 JSON"
+
+msgid "PON status snapshot exported."
+msgstr "PON 状态快照已导出。"
+
+msgid "Unable to export PON status: %s"
+msgstr "无法导出 PON 状态：%s"
+
+msgid "Update PON package (experimental)"
+msgstr "更新 PON 插件（实验性）"
+
+msgid "Install a locally downloaded luci-app-pon .apk package. Only the PON web UI is replaced; no remote download is performed."
+msgstr "安装本地下载的 luci-app-pon .apk 包。仅替换 PON 网页界面，不会远程下载。"
+
+msgid "Package file"
+msgstr "插件文件"
+
+msgid "Install package"
+msgstr "安装插件"
+
+msgid "Choose a luci-app-pon package file first."
+msgstr "请先选择 luci-app-pon 插件文件。"
+
+msgid "Only luci-app-pon .apk files can be installed here."
+msgstr "此处只能安装 luci-app-pon 的 .apk 文件。"
+
+msgid "Install the selected PON package? The LuCI page will reload after installation."
+msgstr "安装所选的 PON 插件？安装完成后请刷新 LuCI 页面。"
+
+msgid "PON package installed. Refresh the page; if LuCI looks broken, reload firmware or restore from a previous package."
+msgstr "PON 插件已安装。请刷新页面；若 LuCI 显示异常，请重新刷固件或用旧插件包恢复。"
+
+msgid "PON package install failed: %s"
+msgstr "PON 插件安装失败：%s"
+
+msgid "PON online update"
+msgstr "PON 在线更新"
+
+msgid "Check the installed PON version against the latest release and install the new package online. The update source can be changed under UCI pon.update.release_url."
+msgstr "检查已安装的 PON 版本与最新发布版本，并在线安装新插件。更新源可通过 UCI 的 pon.update.release_url 修改。"
+
+msgid "Installed version"
+msgstr "已安装版本"
+
+msgid "Latest release"
+msgstr "最新版本"
+
+msgid "Size"
+msgstr "大小"
+
+msgid "Source"
+msgstr "来源"
+
+msgid "Release notes"
+msgstr "发布说明"
+
+msgid "Unavailable"
+msgstr "不可用"
+
+msgid "Update status"
+msgstr "更新状态"
+
+msgid "Check again"
+msgstr "重新检查"
+
+msgid "Download and install"
+msgstr "下载并安装"
+
+msgid "Update check failed: %s"
+msgstr "更新检查失败：%s"
+
+msgid "Unexpected release response"
+msgstr "发布信息格式异常"
+
+msgid "No luci-app-pon package in the latest release"
+msgstr "最新版本中没有 luci-app-pon 插件包"
+
+msgid "Download and install %s (%s)?"
+msgstr "下载并安装 %s（%s）？"
+
+msgid "Downloading %s …"
+msgstr "正在下载 %s …"
+
+msgid "Downloaded %s (sha256 %s). Install now?"
+msgstr "已下载 %s（sha256 %s）。现在安装？"
+
+msgid "PON package installed. Refresh the page; if LuCI looks broken, reload firmware."
+msgstr "PON 插件已安装。请刷新页面；若 LuCI 显示异常，请重新刷固件。"
+
+msgid "Update failed: %s"
+msgstr "更新失败：%s"
+
+msgid "Fallback: local package"
+msgstr "备用方式：本地插件包"
+
+msgid "If online access fails, install a locally downloaded luci-app-pon .apk package here."
+msgstr "如果无法联网，可在此安装本地下载的 luci-app-pon .apk 包。"
+
+msgid "Install local package"
+msgstr "安装本地插件包"
+
+msgid "Only luci-app-pon .apk files are accepted."
+msgstr "只接受 luci-app-pon 的 .apk 文件。"
+
+msgid "Install the selected local PON package?"
+msgstr "安装所选的本地 PON 插件包？"
+
+msgid "Install failed: %s"
+msgstr "安装失败：%s"
+
+msgid "unknown"
+msgstr "未知"

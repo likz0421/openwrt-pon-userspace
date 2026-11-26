@@ -26,7 +26,55 @@ function downloadBundle() {
 	});
 }
 
+// Collect a timestamped JSON snapshot of every PON line using the read-only
+// ponctl status --json command already exposed by the backend.
+function exportStatusSnapshot() {
+	var lines = uci.sections('pon', 'xpon').map(function(section) {
+		return section.device || section['.name'];
+	});
+
+	return Promise.all(lines.map(function(device) {
+		return L.resolveDefault(fs.exec_direct('/usr/sbin/ponctl',
+			[ '--device', device, 'status', '--json' ]), null).then(function(output) {
+			var parsed = null;
+			try { parsed = output ? JSON.parse(output) : null; }
+			catch (e) { parsed = null; }
+			return { device: device, status: parsed, raw: parsed ? null : output };
+		});
+	})).then(function(results) {
+		var snapshot = {
+			exported_at: new Date().toISOString(),
+			schema_version: 1,
+			lines: results
+		};
+		var blob = new Blob([ JSON.stringify(snapshot, null, 2) ],
+			{ type: 'application/json;charset=utf-8' });
+		var url = window.URL.createObjectURL(blob);
+		var link = document.createElement('a');
+		link.style.display = 'none';
+		link.href = url;
+		link.download = 'pon-status-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		window.URL.revokeObjectURL(url);
+	});
+}
+
 return view.extend({
+	handleExportSnapshot: function() {
+		var button = document.getElementById('pon-status-export');
+		button.disabled = true;
+		return exportStatusSnapshot().then(function() {
+			ui.addNotification(null, E('p', {}, _('PON status snapshot exported.')));
+		}).catch(function(error) {
+			ui.addNotification(null, E('p', {},
+				_('Unable to export PON status: %s').format(error.message)));
+		}).finally(function() {
+			button.disabled = false;
+		});
+	},
+
 	handleDownload: function() {
 		var button = document.getElementById('pon-debug-download');
 
@@ -92,6 +140,11 @@ return view.extend({
 					E('h3', {}, _('Diagnostic operations')),
 					E('p', {}, _('The package contains raw packet captures, PON state, system logs and network configuration.')),
 					E('div', { 'class': 'cbi-page-actions' }, [
+						E('button', {
+							'class': 'cbi-button',
+							'id': 'pon-status-export',
+							'click': ui.createHandlerFn(this, 'handleExportSnapshot')
+						}, _('Export status JSON')),
 						E('button', {
 							'class': 'cbi-button cbi-button-action',
 							'id': 'pon-debug-download',

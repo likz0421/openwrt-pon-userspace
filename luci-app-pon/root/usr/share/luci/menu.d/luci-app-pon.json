@@ -48,5 +48,21 @@
 		"depends": {
 			"fs": { "/usr/libexec/airoha-pon-debug": "executable" }
 		}
+	},
+	"admin/network/pon/backup": {
+		"title": "Backup / Restore",
+		"order": 50,
+		"action": {
+			"type": "view",
+			"path": "pon/backup"
+		}
+	},
+	"admin/network/pon/update": {
+		"title": "Online update",
+		"order": 60,
+		"action": {
+			"type": "view",
+			"path": "pon/update"
+		}
 	}
 }

@@ -11,7 +11,7 @@ pub enum Value {
 
 pub type Snapshot = BTreeMap<String, BTreeMap<String, Value>>;
 
-fn quoted(text: &str) -> String {
+pub fn json_quote(text: &str) -> String {
     let mut out = String::from("\"");
     for ch in text.chars() {
         match ch {
@@ -31,10 +31,10 @@ fn quoted(text: &str) -> String {
 impl Value {
     fn json(&self) -> String {
         match self {
-            Self::Text(value) => quoted(value),
+            Self::Text(value) => json_quote(value),
             Self::Bool(value) => value.to_string(),
             Self::Integer(value) => value.to_string(),
-            Self::Unsigned(value) => quoted(&value.to_string()),
+            Self::Unsigned(value) => json_quote(&value.to_string()),
             Self::Number(value) => format!("{value:.4}"),
         }
     }
@@ -56,14 +56,43 @@ pub fn json(snapshot: &Snapshot) -> String {
         .map(|(name, fields)| {
             let values = fields
                 .iter()
-                .map(|(key, value)| format!("{}:{}", quoted(key), value.json()))
+                .map(|(key, value)| format!("{}:{}", json_quote(key), value.json()))
                 .collect::<Vec<_>>()
                 .join(",");
-            format!("{}:{{{values}}}", quoted(name))
+            format!("{}:{{{values}}}", json_quote(name))
         })
         .collect::<Vec<_>>()
         .join(",");
     format!("{{\"schema_version\":1,{groups}}}")
+}
+
+/// Aggregate per-device snapshots into one versioned document so a single
+/// call can feed the dashboard and the status exporter. Each inner snapshot
+/// keeps the v1 shape, so existing v1 consumers stay compatible.
+pub fn aggregate_json(version: &str, lines: &[(String, Snapshot)]) -> String {
+    let entries = lines
+        .iter()
+        .map(|(device, snapshot)| {
+            let groups = snapshot
+                .iter()
+                .map(|(name, fields)| {
+                    let values = fields
+                        .iter()
+                        .map(|(key, value)| format!("{}:{}", json_quote(key), value.json()))
+                        .collect::<Vec<_>>()
+                        .join(",");
+                    format!("{}:{{{values}}}", json_quote(name))
+                })
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("{}:{{{groups}}}", json_quote(device))
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "{{\"schema_version\":2,\"ponctl_version\":{},\"lines\":{{{entries}}}}}",
+        json_quote(version)
+    )
 }
 
 pub fn human(snapshot: &Snapshot) -> String {
@@ -134,6 +163,26 @@ mod tests {
         assert_eq!(frontend["tx_power_dbm"].text(), "-40.00");
         assert_eq!(frontend["rx_power_dbm"].text(), "-27.45");
         assert!(!frontend.contains_key("tx_power_8472"));
+    }
+
+    #[test]
+    fn aggregate_json_wraps_all_devices_with_version() {
+        let line_fields = || {
+            BTreeMap::from([("lifecycle".into(), Value::Text("operational".into()))])
+        };
+        let mut snap0 = Snapshot::new();
+        snap0.insert("line".into(), line_fields());
+        let mut snap1 = Snapshot::new();
+        snap1.insert("line".into(), line_fields());
+        let out = aggregate_json(
+            "0.2.1",
+            &[("pon0".into(), snap0), ("pon1".into(), snap1)],
+        );
+        assert!(out.contains("\"schema_version\":2"));
+        assert!(out.contains("\"ponctl_version\":\"0.2.1\""));
+        assert!(out.contains("\"pon0\":{"));
+        assert!(out.contains("\"pon1\":{"));
+        assert!(out.contains("\"lifecycle\":\"operational\""));
     }
 
     #[test]

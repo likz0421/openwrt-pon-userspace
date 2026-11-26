@@ -10,11 +10,17 @@
 			"file": {
 				"/usr/sbin/ponctl --device * status": [ "exec" ],
 				"/usr/sbin/ponctl --device * status --json": [ "exec" ],
+				"/usr/sbin/ponctl version --json": [ "exec" ],
+				"/bin/busybox wget -q -O - *": [ "exec" ],
+				"/usr/bin/sha256sum /tmp/luci-app-pon-online.apk": [ "exec" ],
 				"/usr/bin/pondctl status --line *": [ "exec" ],
 				"/usr/libexec/pon-board-identity list": [ "exec" ],
 				"/usr/libexec/pon-board-identity read *": [ "exec" ],
 				"/usr/libexec/airoha-pon-data list": [ "exec" ],
-				"/tmp/pon-debug.tar.gz": [ "read" ]
+				"/sbin/uci export pon": [ "exec" ],
+				"/tmp/pon-debug.tar.gz": [ "read" ],
+				"/tmp/pon-config-backup": [ "read" ],
+				"/tmp/pon-config-import": [ "read" ]
 			}
 		},
 		"write": {
@@ -25,10 +31,18 @@
 			},
 			"file": {
 				"/tmp/pon-board-data.bin": [ "write" ],
+				"/tmp/pon-config-backup": [ "write" ],
+				"/tmp/pon-config-import": [ "write" ],
+				"/tmp/luci-app-pon-update.apk": [ "write" ],
+				"/tmp/luci-app-pon-online.apk": [ "write" ],
+				"/bin/busybox wget -q -O /tmp/luci-app-pon-online.apk *": [ "exec" ],
+				"/usr/bin/apk add --allow-untrusted /tmp/luci-app-pon-online.apk": [ "exec" ],
+				"/usr/bin/apk add --allow-untrusted /tmp/luci-app-pon-update.apk": [ "exec" ],
 				"/usr/libexec/airoha-pon-data write *": [ "exec" ],
 				"/usr/libexec/pon-board-identity write *": [ "exec" ],
 				"/usr/libexec/airoha-pon-debug collect": [ "exec" ],
-				"/usr/libexec/airoha-pon-debug restart": [ "exec" ]
+				"/usr/libexec/airoha-pon-debug restart": [ "exec" ],
+				"/sbin/uci import pon *": [ "exec" ]
 			}
 		}
 	}
