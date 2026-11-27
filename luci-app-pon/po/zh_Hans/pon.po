@@ -1172,3 +1172,48 @@ msgstr "第 2 步：注册与身份（EPON）"
 
 msgid "Shown for EPON lines only. Choose the OAM profile first; LOID fields apply to the CTC profile."
 msgstr "仅 EPON 线路显示。请先选择 OAM 模板，LOID 字段仅在 CTC 模板下生效。"
+
+msgid "Weak optical signal"
+msgstr "光信号偏弱"
+
+msgid "Optical power trend"
+msgstr "光功率趋势"
+
+msgid "Weak below %s dBm"
+msgstr "低于 %s dBm 视为偏弱"
+
+msgid "Collecting trend…"
+msgstr "正在采集趋势…"
+
+msgid "Recent link events"
+msgstr "近期链路事件"
+
+msgid "No link state changes since this page was opened."
+msgstr "自本页打开以来没有链路状态变化。"
+
+msgid "Import will change %d setting(s):"
+msgstr "导入将改变 %d 项设置："
+
+msgid "add"
+msgstr "新增"
+
+msgid "remove"
+msgstr "删除"
+
+msgid "change"
+msgstr "修改"
+
+msgid "%d more"
+msgstr "还有 %d 项"
+
+msgid "A backup of the current configuration will be saved first."
+msgstr "将先备份当前配置。"
+
+msgid "Continue with the import?"
+msgstr "确认继续导入？"
+
+msgid "Import cancelled by user."
+msgstr "用户已取消导入。"
+
+msgid "Restore cancelled by user."
+msgstr "用户已取消恢复。"

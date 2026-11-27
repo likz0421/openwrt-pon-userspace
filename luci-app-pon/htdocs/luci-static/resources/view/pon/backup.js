@@ -45,6 +45,55 @@ function validateConfig(text) {
 	return true;
 }
 
+// Build a compact, human-readable diff summary so an import never silently
+// replaces the configuration. Compares option/list values by section+key.
+function configDiff(current, incoming) {
+	function index(text) {
+		var map = Object.create(null), section = '';
+		text.split(/\r?\n/).forEach(function(raw) {
+			var line = raw.trim();
+			var sectionMatch = /^config\s+([A-Za-z0-9_]+)(?:\s+'([^']+)')?\s*$/.exec(line);
+			if (sectionMatch) {
+				section = sectionMatch[1] + '.' + (sectionMatch[2] || '@' + sectionMatch[1]);
+				return;
+			}
+			var optionMatch = /^(option|list)\s+([A-Za-z0-9_]+)\s+(.*)$/.exec(line);
+			if (optionMatch && section)
+				map[section + '.' + optionMatch[2]] = optionMatch[3];
+		});
+		return map;
+	}
+	var before = index(current), after = index(incoming);
+	var keys = {};
+	Object.keys(before).concat(Object.keys(after)).forEach(function(k) { keys[k] = true; });
+	var changes = [];
+	Object.keys(keys).sort().forEach(function(k) {
+		var a = before[k], b = after[k];
+		if (a === b)
+			return;
+		if (a === undefined)
+			changes.push({ k: k, t: _('add'), v: b });
+		else if (b === undefined)
+			changes.push({ k: k, t: _('remove'), v: a });
+		else
+			changes.push({ k: k, t: _('change'), v: a + ' → ' + b });
+	});
+	return changes;
+}
+
+function confirmImport(current, incoming) {
+	var changes = configDiff(current, incoming);
+	var lines = [ _('Import will change %d setting(s):').format(changes.length) ];
+	changes.slice(0, 20).forEach(function(c) {
+		lines.push('  [' + c.t + '] ' + c.k + ' = ' + c.v);
+	});
+	if (changes.length > 20)
+		lines.push('  … ' + _('%d more').format(changes.length - 20));
+	lines.push('', _('A backup of the current configuration will be saved first.'));
+	lines.push(_('Continue with the import?'));
+	return window.confirm(lines.join('\n'));
+}
+
 function downloadText(text) {
 	var blob = new Blob([ text ], { type: 'text/plain;charset=utf-8' });
 	var url = window.URL.createObjectURL(blob);
@@ -80,8 +129,11 @@ return view.extend({
 			return fs.read_direct(IMPORT_PATH, 'text');
 		}).then(function(text) {
 			validateConfig(text);
-			// Keep a snapshot of the current config before replacing it.
+			// Keep a snapshot of the current config before replacing it, and
+			// show exactly what will change so nothing is applied blindly.
 			return fs.exec_direct(EXPORT_CMD, [ 'export', CONFIG ]).then(function(current) {
+				if (!confirmImport(current, text))
+					throw new Error(_('Import cancelled by user.'));
 				return fs.write_direct(BACKUP_PATH, current).then(function() {
 					return text;
 				});
@@ -108,8 +160,14 @@ return view.extend({
 	handleRestore: function() {
 		var button = document.getElementById('pon-config-restore');
 		button.disabled = true;
-		return fs.read_direct(BACKUP_PATH, 'text').then(function(text) {
+		return Promise.all([
+			fs.read_direct(BACKUP_PATH, 'text'),
+			fs.exec_direct(EXPORT_CMD, [ 'export', CONFIG ])
+		]).then(function(results) {
+			var text = results[0], current = results[1];
 			validateConfig(text);
+			if (!confirmImport(current, text))
+				throw new Error(_('Restore cancelled by user.'));
 			return fs.write_direct(IMPORT_PATH, text).then(function() {
 				return fs.exec_direct(EXPORT_CMD, [ 'import', CONFIG, IMPORT_PATH ]);
 			});

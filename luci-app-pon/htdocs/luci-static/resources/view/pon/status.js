@@ -7,6 +7,48 @@
 'require uci';
 'require view';
 
+/* Bounded in-memory history: page lifetime only, never written to flash.
+   Polling is every 3s; 40 samples ≈ 2 minutes of optical power trend. */
+var TREND_LIMIT = 40;
+var WEAK_RX_DBM = -27;
+var powerHistory = Object.create(null);
+var eventLog = [];
+var EVENT_LIMIT = 30;
+
+function recordTrend(status) {
+	(status.lines || []).forEach(function(item) {
+		var key = item.section['.name'] || '';
+		var frontend = item.frontend || {};
+		if (!key || frontend.error ||
+			!Object.prototype.hasOwnProperty.call(frontend, 'rx_power_dbm'))
+			return;
+		var value = Number(frontend.rx_power_dbm);
+		if (!isFinite(value))
+			return;
+		var series = powerHistory[key] || (powerHistory[key] = []);
+		series.push({ t: Date.now(), v: value,
+			life: (item.line || {}).lifecycle || '' });
+		if (series.length > TREND_LIMIT)
+			series.splice(0, series.length - TREND_LIMIT);
+	});
+}
+
+function recordEvents(status) {
+	(status.lines || []).forEach(function(item) {
+		var key = item.section['.name'] || '';
+		var life = (item.line || {}).lifecycle || '';
+		var series = powerHistory[key];
+		if (!key || !series || series.length < 2)
+			return;
+		var prev = series[series.length - 2].life;
+		if (!prev || prev === life)
+			return;
+		eventLog.unshift({ t: new Date(), name: key, from: prev, to: life });
+		if (eventLog.length > EVENT_LIMIT)
+			eventLog.length = EVENT_LIMIT;
+	});
+}
+
 function isEponMode(mode) {
 	return (mode || '').indexOf('epon-') === 0;
 }
@@ -463,7 +505,17 @@ var DASH_CSS = [
 	'.pon-badge.pon-ok{background:rgba(46,204,113,.16);color:#1e8449}',
 	'.pon-badge.pon-warn{background:rgba(243,156,18,.16);color:#b9770e}',
 	'.pon-badge.pon-err{background:rgba(231,76,60,.16);color:#c0392b}',
-	'@media(prefers-color-scheme:dark){.pon-card{background:rgba(255,255,255,.05)}.pon-badge.pon-ok{color:#2ecc71}.pon-badge.pon-warn{color:#f39c12}.pon-badge.pon-err{color:#e74c3c}}'
+	'.pon-trend{margin-top:8px;height:30px;position:relative;border-left:1px solid rgba(128,128,128,.25);border-bottom:1px solid rgba(128,128,128,.25)}',
+	'.pon-trend svg{width:100%;height:100%;display:block;overflow:visible}',
+	'.pon-trend-label{font-size:11px;color:var(--text-color-secondary,#888);margin-top:2px;display:flex;justify-content:space-between}',
+	'.pon-weak{display:inline-block;margin-left:6px;padding:0 6px;border-radius:8px;font-size:11px;background:rgba(231,76,60,.16);color:#c0392b}',
+	'.pon-events{margin:14px 0;border:1px solid var(--border-color,rgba(0,0,0,.15));border-radius:8px;padding:10px 14px;background:var(--background-color-primary,#fff)}',
+	'.pon-events h3{margin:0 0 8px;font-size:14px}',
+	'.pon-event{display:flex;gap:10px;font-size:12px;line-height:1.8;border-top:1px solid rgba(128,128,128,.12);padding:2px 0}',
+	'.pon-event:first-of-type{border-top:0}',
+	'.pon-event-time{color:var(--text-color-secondary,#888);white-space:nowrap;font-variant-numeric:tabular-nums}',
+	'.pon-event-change{color:var(--text-color-primary,#333)}',
+	'@media(prefers-color-scheme:dark){.pon-card{background:rgba(255,255,255,.05)}.pon-badge.pon-ok{color:#2ecc71}.pon-badge.pon-warn{color:#f39c12}.pon-badge.pon-err{color:#e74c3c}.pon-events{background:rgba(255,255,255,.05)}.pon-event-change{color:#e8e8e8}}'
 ].join('');
 
 function dashTone(lifecycle, error) {
@@ -483,6 +535,53 @@ function dashMetric(label, value) {
 	]);
 }
 
+function renderTrend(series) {
+	var wrap = E('div', { 'class': 'pon-trend' });
+	if (!series || series.length < 2) {
+		E('span', { 'class': 'pon-trend-label' }, _('Collecting trend…')).appendTo(wrap);
+		return wrap;
+	}
+	var values = series.map(function(s) { return s.v; });
+	var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+	var span = Math.max(max - min, 1.0);
+	var w = 100, h = 28, n = values.length;
+	var points = values.map(function(v, i) {
+		var x = n === 1 ? 0 : i * w / (n - 1);
+		var y = h - (v - min) / span * (h - 4) - 2;
+		return x.toFixed(1) + ',' + y.toFixed(1);
+	}).join(' ');
+	var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+	svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+	svg.setAttribute('preserveAspectRatio', 'none');
+	var line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+	line.setAttribute('points', points);
+	line.setAttribute('fill', 'none');
+	line.setAttribute('stroke', min < WEAK_RX_DBM ? '#e74c3c' : '#2ecc71');
+	line.setAttribute('stroke-width', '1.5');
+	line.setAttribute('vector-effect', 'non-scaling-stroke');
+	svg.appendChild(line);
+	wrap.appendChild(svg);
+	return wrap;
+}
+
+function renderEvents() {
+	var box = E('div', { 'class': 'pon-events' }, [ E('h3', {}, _('Recent link events')) ]);
+	if (!eventLog.length) {
+		box.appendChild(E('div', { 'class': 'pon-event' },
+			_('No link state changes since this page was opened.')));
+		return box;
+	}
+	eventLog.slice(0, 12).forEach(function(ev) {
+		box.appendChild(E('div', { 'class': 'pon-event' }, [
+			E('span', { 'class': 'pon-event-time' },
+				ev.t.toLocaleTimeString()),
+			E('span', { 'class': 'pon-event-change' },
+				ev.name + ': ' + displayLifecycle(ev.from) + ' → ' + displayLifecycle(ev.to))
+		]));
+	});
+	return box;
+}
+
 function renderDashboard(data) {
 	var cards = [];
 	data.lines.forEach(function(item) {
@@ -490,19 +589,30 @@ function renderDashboard(data) {
 		var frontend = item.frontend || {};
 		var mode = getLineModes(item);
 		var tone = dashTone(line.lifecycle, item.error);
+		var rxValue = !frontend.error &&
+			Object.prototype.hasOwnProperty.call(frontend, 'rx_power_dbm') ?
+				Number(frontend.rx_power_dbm) : null;
+		var weak = rxValue !== null && isFinite(rxValue) && rxValue < WEAK_RX_DBM;
 		var rx = frontend.error ? _('Read failed') :
-			(Object.prototype.hasOwnProperty.call(frontend, 'rx_power_dbm') ?
-				Number(frontend.rx_power_dbm).toFixed(2) + ' dBm' : _('Not supported'));
-		cards.push(E('div', { 'class': 'pon-card ' + tone }, [
+			(rxValue !== null && isFinite(rxValue) ?
+				rxValue.toFixed(2) + ' dBm' : _('Not supported'));
+		var key = item.section['.name'] || '';
+		cards.push(E('div', { 'class': 'pon-card ' + (weak ? 'pon-err' : tone) }, [
 			E('div', { 'class': 'pon-card-title' }, [
 				item.section['.name'],
-				E('span', { 'class': 'pon-badge ' + tone }, ' ' + displayLifecycle(line.lifecycle))
+				E('span', { 'class': 'pon-badge ' + (weak ? 'pon-err' : tone) }, ' ' + displayLifecycle(line.lifecycle)),
+				weak ? E('span', { 'class': 'pon-weak' }, _('Weak optical signal')) : null
 			]),
 			E('div', { 'class': 'pon-card-mode' }, modeLabel(mode.shown) + ' · ' + (item.section.device || '-')),
 			dashMetric(_('Line state'), displayLifecycle(line.lifecycle)),
 			dashMetric(_('Receive optical power'), rx),
 			dashMetric(_('Optical signal'), displayBoolean(line.optical_signal)),
-			dashMetric(_('Service ready'), (item.datapath || {}).service_ready === true ? _('Yes') : _('No'))
+			dashMetric(_('Service ready'), (item.datapath || {}).service_ready === true ? _('Yes') : _('No')),
+			renderTrend(powerHistory[key]),
+			E('div', { 'class': 'pon-trend-label' }, [
+				E('span', {}, _('Optical power trend')),
+				E('span', {}, _('Weak below %s dBm').format(WEAK_RX_DBM))
+			])
 		]));
 	});
 	if (!cards.length)
@@ -540,12 +650,15 @@ return view.extend({
 	},
 
 	render: function(data) {
+		recordTrend(data);
 		var dashboard = E('div', { 'id': 'pon-dashboard' }, renderDashboard(data));
+		var events = E('div', { 'id': 'pon-events' }, renderEvents());
 		var container = E('div', { 'id': 'pon-status' }, renderStatus(data));
 		var root = E('div', { 'class': 'cbi-map' }, [
 			E('style', {}, DASH_CSS),
 			E('h2', {}, _('PON status')),
 			dashboard,
+			events,
 			container
 		]);
 
@@ -558,7 +671,10 @@ return view.extend({
 					if (node.open)
 						opened[node.getAttribute('data-pon-details')] = true;
 				});
+				recordEvents(status);
+				recordTrend(status);
 				dom.content(dashboard, renderDashboard(status));
+				dom.content(events, renderEvents());
 				dom.content(container, renderStatus(status));
 				container.querySelectorAll('details[data-pon-details]').forEach(function(node) {
 					node.open = opened[node.getAttribute('data-pon-details')] === true;
