@@ -323,9 +323,28 @@ function row(label, value) {
 	]);
 }
 
-function statusTable(title, rows) {
+var STATUS_TABLE_CSS =
+	'.pon-st-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 6px}' +
+	'.pon-st-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;' +
+	'background:rgba(74,144,217,.14);color:#2874a6;letter-spacing:.3px}' +
+	'.pon-st-badge.omci{background:rgba(155,89,182,.14);color:#8e44ad}' +
+	'.pon-st-badge.oam{background:rgba(243,156,18,.14);color:#b9770e}' +
+	'.pon-st-name{font-size:16px;font-weight:600}' +
+	'.pon-st-dev{font-size:12px;color:var(--text-color-secondary,#888);font-family:monospace}';
+
+function statusTable(title, rows, kind) {
+	var badge = E('span', { 'class': 'pon-st-badge' + (kind ? ' ' + kind : '') },
+		(kind || 'PON').toUpperCase());
+	var name = title, dev = '';
+	var m = /^(.+?)\s*\(([^)]+)\)$/.exec(title);
+	if (m) { name = m[1]; dev = m[2]; }
+	var head = E('div', { 'class': 'pon-st-head' }, [
+		badge,
+		E('span', { 'class': 'pon-st-name' }, name),
+		dev ? E('span', { 'class': 'pon-st-dev' }, dev) : null
+	].filter(Boolean));
 	return E('div', { 'class': 'cbi-section' }, [
-		E('h3', {}, title), E('table', { 'class': 'table' }, rows)
+		E('style', {}, STATUS_TABLE_CSS), head, E('table', { 'class': 'table' }, rows)
 	]);
 }
 
@@ -360,7 +379,7 @@ function renderLine(item) {
 	var details;
 
 	if (item.error)
-		return { mode: mode.shown, nodes: [ statusTable(title, [ row(_('Error'), item.error) ]) ] };
+		return { mode: mode.shown, nodes: [ statusTable(title, [ row(_('Error'), item.error) ], 'pon') ] };
 	main.push(
 		row(_('Line state'), displayLifecycle(line.lifecycle)),
 		row(_('Optical signal detected'), displayBoolean(line.optical_signal)),
@@ -429,7 +448,7 @@ function renderLine(item) {
 	);
 
 	return { mode: mode.shown, nodes: [
-		statusTable(title, main),
+		statusTable(title, main, 'pon'),
 		detailsTable(isEponMode(mode.shown) ? _('EPON line counters and diagnostics') :
 			_('ITU-T PON counters and diagnostics'), details, item.section['.name'])
 	] };
@@ -440,7 +459,7 @@ function renderOmci(item) {
 	var title = _('OMCI: %s (%s)').format(item.section['.name'], item.section.device || '-');
 
 	if (item.error)
-		return statusTable(title, [ row(_('Error'), item.error) ]);
+		return statusTable(title, [ row(_('Error'), item.error) ], 'omci');
 	return statusTable(title, [
 		row(_('OMCI channel online'), displayBoolean(values.channel_available)),
 		row(_('LOID configured locally'), displayBoolean(values.loid_configured)),
@@ -458,7 +477,7 @@ function renderOmci(item) {
 		row(_('OLT broadcast keys'), displayBroadcastKeys(values)),
 		row(_('Received OMCI messages'), values.rx_messages),
 		row(_('OMCI parse errors'), values.parse_errors)
-	]);
+	], 'omci');
 }
 
 function renderOam(item) {
@@ -467,7 +486,7 @@ function renderOam(item) {
 	var rows;
 
 	if (item.error)
-		return statusTable(title, [ row(_('Error'), item.error) ]);
+		return statusTable(title, [ row(_('Error'), item.error) ], 'oam');
 	rows = [
 		row(_('LLID OAM channel online'), displayBoolean(values.channel_available)),
 		row(_('IEEE OAM discovery completed'),
@@ -490,7 +509,7 @@ function renderOam(item) {
 		row(_('Received OAM messages'), values.rx_messages),
 		row(_('OAM parse errors'), values.parse_errors)
 	);
-	return statusTable(title, rows);
+	return statusTable(title, rows, 'oam');
 }
 
 /* Dashboard: compact at-a-glance cards above the detailed tables. */

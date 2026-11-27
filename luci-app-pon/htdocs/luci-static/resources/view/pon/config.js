@@ -105,68 +105,50 @@ var PON_READY_CSS =
 	'.pon-ready-go{background:#2ecc71;border-color:#27ae60;color:#fff;font-weight:600;padding:6px 18px}' +
 	'@media(prefers-color-scheme:dark){.pon-ready{background:rgba(255,255,255,.05)}.pon-ready-ok{color:#2ecc71}.pon-ready-no{color:#e74c3c}}';
 
-// Decide whether the PON line is ready to register. Kept deliberately simple
-// and conservative: only the fields that actually block registration are
-// required, so the button never appears "ready" when the line cannot work.
-function readinessOf() {
+// Informational snapshot of the current PON configuration. Deliberately does
+// NOT gate the restart button: many ISPs (bridge mode, preset optics) need no
+// LOID/SN at all, so a strict "readiness" check would block valid setups.
+function readyNode() {
 	var lines = uci.sections('pon', 'xpon');
 	var line = lines && lines[0] || {};
 	var mode = line.mode || '';
 	var isEpon = mode.indexOf('epon-') === 0;
+	var oam = uci.sections('pon', 'oam').filter(function(s) {
+		return s.line === line['.name'];
+	})[0] || {};
 
-	var checks = [];
-	checks.push({ label: _('Line mode'), ok: mode !== '',
-		hint: mode ? mode : _('Choose a line mode in Step 1') });
+	var rows = [
+		{ label: _('Line mode'), value: mode || _('driver default') },
+		{ label: _('Serial number / driver default'), value: line.serial_number || _('driver default') }
+	];
+	if (isEpon)
+		rows.push({ label: _('LOID'), value: oam.loid || _('not set') });
 
-	if (isEpon) {
-		var oam = uci.sections('pon', 'oam').filter(function(s) {
-			return s.line === line['.name'];
-		})[0] || {};
-		var loid = oam.loid || '';
-		checks.push({ label: _('LOID'), ok: loid !== '',
-			hint: loid ? _('configured') : _('Fill in the LOID in Step 2') });
-	} else {
-		checks.push({ label: _('Serial number / driver default'), ok: true,
-			hint: (line.serial_number || _('driver default')) });
-	}
-
-	return checks;
-}
-
-function readyNode() {
-	var checks = readinessOf();
-	var allOk = checks.every(function(c) { return c.ok; });
 	var box = E('div', { 'class': 'pon-ready' }, [
 		E('style', {}, PON_READY_CSS),
-		E('h3', {}, _('Registration readiness'))
+		E('h3', {}, _('Current PON configuration'))
 	]);
-	checks.forEach(function(c) {
+	rows.forEach(function(r) {
 		box.appendChild(E('div', { 'class': 'pon-ready-row' }, [
-			E('span', { 'class': c.ok ? 'pon-ready-ok' : 'pon-ready-no' }, c.ok ? '\u2713' : '\u2717'),
-			E('strong', {}, c.label + ': '),
-			E('span', {}, c.hint)
+			E('strong', {}, r.label + ': '),
+			E('span', {}, r.value)
 		]));
 	});
-	if (allOk) {
-		box.appendChild(E('div', { 'class': 'pon-ready-hint' },
-			_('All required settings are filled in. Save & Apply first, then restart PON to register.')));
-		box.appendChild(E('div', { 'class': 'pon-ready-action' }, [
-			E('button', {
-				'class': 'cbi-button pon-ready-go',
-				'type': 'button',
-				'click': ui.createHandlerFn(this, function() {
-					if (!window.confirm(_('Restart PON to apply the saved configuration and re-register?')))
-						return;
-					return this.handleRestartPon();
-				})
-			}, _('Restart PON to register')),
-			E('span', { 'class': 'pon-ready-hint' },
-				_('Make sure you clicked Save & Apply before restarting.'))
-		]));
-	} else {
-		box.appendChild(E('div', { 'class': 'pon-ready-hint' },
-			_('Fill in the missing items above, then Save & Apply. This card updates after saving.')));
-	}
+	box.appendChild(E('div', { 'class': 'pon-ready-hint' },
+		_('No internet? After saving, restart PON to re-register. Most lines need only the mode; LOID/SN are ISP-specific.')));
+	box.appendChild(E('div', { 'class': 'pon-ready-action' }, [
+		E('button', {
+			'class': 'cbi-button pon-ready-go',
+			'type': 'button',
+			'click': ui.createHandlerFn(this, function() {
+				if (!window.confirm(_('Restart PON to apply the saved configuration and re-register?')))
+					return;
+				return this.handleRestartPon();
+			})
+		}, _('Restart PON')),
+		E('span', { 'class': 'pon-ready-hint' },
+			_('Make sure you clicked Save & Apply before restarting.'))
+	]));
 	return box;
 }
 

@@ -1304,3 +1304,42 @@ msgstr "已配置"
 
 msgid "driver default"
 msgstr "驱动默认值"
+
+msgid "Checks the installed version and installs the newest package online. Several read-only mirrors are tried automatically if GitHub is unreachable; set UCI pon.update.release_url to force one specific source."
+msgstr "检查已安装版本并在线安装最新版。若 GitHub 无法访问，会自动尝试多个只读镜像；可通过 UCI pon.update.release_url 指定单一来源。"
+
+msgid "Built-in mirror"
+msgstr "内置镜像"
+
+msgid "Asset"
+msgstr "资产"
+
+msgid "Update type"
+msgstr "更新类型"
+
+msgid "PON plugin hot update"
+msgstr "PON 插件热更新"
+
+msgid "Full firmware (PON built in)"
+msgstr "完整固件（内置 PON）"
+
+msgid "Firmware download"
+msgstr "固件下载"
+
+msgid "How to update"
+msgstr "如何更新"
+
+msgid "PON is built into the firmware. Download the sysupgrade image above and flash it in System → Backup / Flash Firmware."
+msgstr "PON 已内置在固件中。请下载上方 sysupgrade 镜像，在系统 → 备份/升级固件中刷入。"
+
+msgid "Download and install plugin"
+msgstr "下载并安装插件"
+
+msgid "Current PON configuration"
+msgstr "当前 PON 配置"
+
+msgid "not set"
+msgstr "未设置"
+
+msgid "No internet? After saving, restart PON to re-register. Most lines need only the mode; LOID/SN are ISP-specific."
+msgstr "上不了网？保存后重启 PON 可重新注册。大多数线路只需选模式；LOID/序列号由运营商决定，通常留空。"
