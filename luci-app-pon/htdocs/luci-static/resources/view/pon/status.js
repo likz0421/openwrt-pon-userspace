@@ -538,7 +538,7 @@ function dashMetric(label, value) {
 function renderTrend(series) {
 	var wrap = E('div', { 'class': 'pon-trend' });
 	if (!series || series.length < 2) {
-		E('span', { 'class': 'pon-trend-label' }, _('Collecting trend…')).appendTo(wrap);
+		wrap.appendChild(E('span', { 'class': 'pon-trend-label' }, _('Collecting trend…')));
 		return wrap;
 	}
 	var values = series.map(function(s) { return s.v; });
@@ -597,12 +597,14 @@ function renderDashboard(data) {
 			(rxValue !== null && isFinite(rxValue) ?
 				rxValue.toFixed(2) + ' dBm' : _('Not supported'));
 		var key = item.section['.name'] || '';
+		var titleChildren = [
+			item.section['.name'],
+			E('span', { 'class': 'pon-badge ' + (weak ? 'pon-err' : tone) }, ' ' + displayLifecycle(line.lifecycle))
+		];
+		if (weak)
+			titleChildren.push(E('span', { 'class': 'pon-weak' }, _('Weak optical signal')));
 		cards.push(E('div', { 'class': 'pon-card ' + (weak ? 'pon-err' : tone) }, [
-			E('div', { 'class': 'pon-card-title' }, [
-				item.section['.name'],
-				E('span', { 'class': 'pon-badge ' + (weak ? 'pon-err' : tone) }, ' ' + displayLifecycle(line.lifecycle)),
-				weak ? E('span', { 'class': 'pon-weak' }, _('Weak optical signal')) : null
-			]),
+			E('div', { 'class': 'pon-card-title' }, titleChildren),
 			E('div', { 'class': 'pon-card-mode' }, modeLabel(mode.shown) + ' · ' + (item.section.device || '-')),
 			dashMetric(_('Line state'), displayLifecycle(line.lifecycle)),
 			dashMetric(_('Receive optical power'), rx),
