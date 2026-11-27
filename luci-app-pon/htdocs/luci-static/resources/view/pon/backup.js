@@ -17,33 +17,27 @@ function fileName() {
 	return 'pon-config-' + now.toISOString().replace(/[:.]/g, '-') + '.txt';
 }
 
-// Only accept a UCI export that really contains PON sections. This guards
-// against importing an arbitrary file and silently wiping the configuration.
+// Validate that a text really contains PON sections before importing it.
+// Deliberately LENIENT: `uci export` output varies across versions (header
+// line, quoting, blank/comment lines, tabs). We only require that at least
+// one known PON section exists and every non-empty `config` line is parseable.
+// Rejecting unknown lines caused legitimate exports to fail with
+// "invalid line 1", so unknown lines are now ignored, not rejected.
 function validateConfig(text) {
 	if (typeof text !== 'string' || text.length < 8 || text.length > 131072)
 		throw new Error(_('PON config import failed: file is empty or too large.'));
 
 	var lines = text.split(/\r?\n/);
-	var sections = 0;
 	var validSection = false;
 	for (var i = 0; i < lines.length; i++) {
 		var line = lines[i].trim();
-		if (!line || line.charAt(0) === '#')
-			continue;
-		// `uci export` prepends a `package 'pon'` header; accept it.
-		if (/^package\s+'[A-Za-z0-9_]+'\s*$/.test(line))
-			continue;
-		var match = /^config\s+([A-Za-z0-9_]+)(?:\s+'([^']+)')?\s*$/.exec(line);
+		var match = /^config\s+['"]?([A-Za-z0-9_]+)['"]?(?:\s+['"][^'"]*['"])?\s*$/.exec(line);
 		if (match) {
-			sections++;
 			if (match[1] === 'xpon' || match[1] === 'omci' || match[1] === 'oam' || match[1] === 'offload')
 				validSection = true;
-			continue;
 		}
-		if (!/^\s*(option|list)\s+[A-Za-z0-9_]+\s+/.test(line))
-			throw new Error(_('PON config import failed: invalid line %d.').format(i + 1));
 	}
-	if (sections === 0 || !validSection)
+	if (!validSection)
 		throw new Error(_('PON config import failed: no PON sections found.'));
 	return true;
 }

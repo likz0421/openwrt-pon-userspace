@@ -94,6 +94,82 @@ var PON_CONFIG_CSS =
 	'.pon-quickstart li{margin:3px 0}' +
 	'.pon-quickstart p{margin:6px 0 0;opacity:.75;font-size:.92em}';
 
+var PON_READY_CSS =
+	'.pon-ready{margin:12px 0;padding:14px 16px;border-radius:8px;border:1px solid rgba(128,128,128,.25);' +
+	'background:var(--background-color-primary,#fff)}' +
+	'.pon-ready h3{margin:0 0 10px;font-size:15px}' +
+	'.pon-ready-row{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.9}' +
+	'.pon-ready-ok{color:#1e8449;font-weight:bold}.pon-ready-no{color:#c0392b;font-weight:bold}' +
+	'.pon-ready-hint{font-size:12px;color:var(--text-color-secondary,#888);margin:8px 0 0}' +
+	'.pon-ready-action{margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}' +
+	'.pon-ready-go{background:#2ecc71;border-color:#27ae60;color:#fff;font-weight:600;padding:6px 18px}' +
+	'@media(prefers-color-scheme:dark){.pon-ready{background:rgba(255,255,255,.05)}.pon-ready-ok{color:#2ecc71}.pon-ready-no{color:#e74c3c}}';
+
+// Decide whether the PON line is ready to register. Kept deliberately simple
+// and conservative: only the fields that actually block registration are
+// required, so the button never appears "ready" when the line cannot work.
+function readinessOf() {
+	var lines = uci.sections('pon', 'xpon');
+	var line = lines && lines[0] || {};
+	var mode = line.mode || '';
+	var isEpon = mode.indexOf('epon-') === 0;
+
+	var checks = [];
+	checks.push({ label: _('Line mode'), ok: mode !== '',
+		hint: mode ? mode : _('Choose a line mode in Step 1') });
+
+	if (isEpon) {
+		var oam = uci.sections('pon', 'oam').filter(function(s) {
+			return s.line === line['.name'];
+		})[0] || {};
+		var loid = oam.loid || '';
+		checks.push({ label: _('LOID'), ok: loid !== '',
+			hint: loid ? _('configured') : _('Fill in the LOID in Step 2') });
+	} else {
+		checks.push({ label: _('Serial number / driver default'), ok: true,
+			hint: (line.serial_number || _('driver default')) });
+	}
+
+	return checks;
+}
+
+function readyNode() {
+	var checks = readinessOf();
+	var allOk = checks.every(function(c) { return c.ok; });
+	var box = E('div', { 'class': 'pon-ready' }, [
+		E('style', {}, PON_READY_CSS),
+		E('h3', {}, _('Registration readiness'))
+	]);
+	checks.forEach(function(c) {
+		box.appendChild(E('div', { 'class': 'pon-ready-row' }, [
+			E('span', { 'class': c.ok ? 'pon-ready-ok' : 'pon-ready-no' }, c.ok ? '\u2713' : '\u2717'),
+			E('strong', {}, c.label + ': '),
+			E('span', {}, c.hint)
+		]));
+	});
+	if (allOk) {
+		box.appendChild(E('div', { 'class': 'pon-ready-hint' },
+			_('All required settings are filled in. Save & Apply first, then restart PON to register.')));
+		box.appendChild(E('div', { 'class': 'pon-ready-action' }, [
+			E('button', {
+				'class': 'cbi-button pon-ready-go',
+				'type': 'button',
+				'click': ui.createHandlerFn(this, function() {
+					if (!window.confirm(_('Restart PON to apply the saved configuration and re-register?')))
+						return;
+					return this.handleRestartPon();
+				})
+			}, _('Restart PON to register')),
+			E('span', { 'class': 'pon-ready-hint' },
+				_('Make sure you clicked Save & Apply before restarting.'))
+		]));
+	} else {
+		box.appendChild(E('div', { 'class': 'pon-ready-hint' },
+			_('Fill in the missing items above, then Save & Apply. This card updates after saving.')));
+	}
+	return box;
+}
+
 function quickStartNode() {
 	var steps = [
 		_('1. Choose the line mode matching your ISP (XG-PON, XGS-PON or EPON).'),
@@ -120,6 +196,20 @@ return view.extend({
 				throw new Error(result.stderr || result.stdout || _('Unable to list storage.'));
 
 			return parseStorageList(result.stdout);
+		});
+	},
+
+	handleRestartPon: function() {
+		var button = document.querySelector('.pon-ready-go');
+		if (button) button.disabled = true;
+		return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]).then(function() {
+			ui.addNotification(null, E('p', {},
+				_('PON restarted. Check the status page to confirm registration.')));
+		}).catch(function(error) {
+			ui.addNotification(null, E('p', {},
+				_('PON restart failed: %s').format(error.message)));
+		}).finally(function() {
+			if (button) button.disabled = false;
 		});
 	},
 
@@ -317,7 +407,7 @@ return view.extend({
 		o.datatype = 'range(1,64)';
 
 		return m.render().then(L.bind(function(map) {
-			var body = [ quickStartNode(), map ];
+			var body = [ quickStartNode(), readyNode(), map ];
 
 			if (storages.length) {
 				selector = E('select', { 'class': 'cbi-input-select' },

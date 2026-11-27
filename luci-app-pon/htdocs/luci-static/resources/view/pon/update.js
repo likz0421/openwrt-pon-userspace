@@ -33,9 +33,10 @@ function currentVersion() {
 }
 
 function latestRelease(source) {
-	// BusyBox wget has no built-in timeout option; wrap with busybox's own
-	// timeout applet so an unreachable GitHub cannot hang the whole page.
-	return fs.exec_direct(BUSYBOX, [ 'timeout', '20', 'wget', '-q', '-O', '-', source ]).then(function(out) {
+	// Use the plain busybox wget form covered by the rpcd ACL. Adding a
+	// `timeout` applet prefix is denied by the ACL ("Access to command denied"),
+	// so we keep the authorized command and handle failures below instead.
+	return fs.exec_direct(BUSYBOX, [ 'wget', '-q', '-O', '-', source ]).then(function(out) {
 		if (!out || !out.trim())
 			throw new Error(_('Cannot reach the update server. Check the router Internet connection and the release URL.'));
 		var info;

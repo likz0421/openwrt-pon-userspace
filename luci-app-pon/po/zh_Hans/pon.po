@@ -1256,3 +1256,51 @@ msgstr "无法连接更新服务器，请检查路由器联网状态和更新地
 
 msgid "Update server returned an invalid response (not JSON). Check the release URL: %s"
 msgstr "更新服务器返回了无效响应（非 JSON 格式），请检查更新地址：%s"
+
+msgid "All required settings are filled in. Save & Apply first, then restart PON to register."
+msgstr "必填项已完成。请先保存并应用，然后重启 PON 以完成注册。"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Choose a line mode in Step 1"
+msgstr "请在第 1 步选择线路模式"
+
+msgid "Fill in the LOID in Step 2"
+msgstr "请在第 2 步填写 LOID"
+
+msgid "Fill in the missing items above, then Save & Apply. This card updates after saving."
+msgstr "请填好上方缺失项后保存并应用。保存后本卡片会自动更新。"
+
+msgid "Make sure you clicked Save & Apply before restarting."
+msgstr "重启前请确认已点击“保存并应用”。"
+
+msgid "PON restart failed: %s"
+msgstr "PON 重启失败：%s"
+
+msgid "PON restarted. Check the status page to confirm registration."
+msgstr "PON 已重启。请到状态页确认注册结果。"
+
+msgid "Registration readiness"
+msgstr "注册就绪状态"
+
+msgid "Restart PON"
+msgstr "重启 PON"
+
+msgid "Restart PON to apply the saved configuration and re-register?"
+msgstr "重启 PON 以应用已保存的配置并重新注册？"
+
+msgid "Restart PON to register"
+msgstr "重启 PON 以注册"
+
+msgid "Restart now"
+msgstr "立即重启"
+
+msgid "Serial number / driver default"
+msgstr "序列号 / 驱动默认值"
+
+msgid "configured"
+msgstr "已配置"
+
+msgid "driver default"
+msgstr "驱动默认值"
