@@ -33,8 +33,17 @@ function currentVersion() {
 }
 
 function latestRelease(source) {
-	return fs.exec_direct(BUSYBOX, [ 'wget', '-q', '-O', '-', source ]).then(function(out) {
-		var info = JSON.parse(out);
+	// BusyBox wget has no built-in timeout option; wrap with busybox's own
+	// timeout applet so an unreachable GitHub cannot hang the whole page.
+	return fs.exec_direct(BUSYBOX, [ 'timeout', '20', 'wget', '-q', '-O', '-', source ]).then(function(out) {
+		if (!out || !out.trim())
+			throw new Error(_('Cannot reach the update server. Check the router Internet connection and the release URL.'));
+		var info;
+		try {
+			info = JSON.parse(out);
+		} catch (error) {
+			throw new Error(_('Update server returned an invalid response (not JSON). Check the release URL: %s').format(source));
+		}
 		if (!info.tag_name || !Array.isArray(info.assets))
 			throw new Error(_('Unexpected release response'));
 		var asset = info.assets.filter(function(a) {
