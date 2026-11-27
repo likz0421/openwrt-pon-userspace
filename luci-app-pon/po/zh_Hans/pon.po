@@ -1124,3 +1124,51 @@ msgstr "安装失败：%s"
 
 msgid "unknown"
 msgstr "未知"
+
+msgid "Configure the PON line on one page. Save & Apply at the bottom applies every section at once."
+msgstr "在一个页面完成 PON 线路配置，点击底部的“保存并应用”即可一次生效。"
+
+msgid "Quick start"
+msgstr "快速上手"
+
+msgid "1. Choose the line mode matching your ISP (XG-PON, XGS-PON or EPON)."
+msgstr "1. 选择与运营商匹配的线路模式（XG-PON、XGS-PON 或 EPON）。"
+
+msgid "2. Enter the LOID and password issued by your ISP."
+msgstr "2. 填写运营商下发的 LOID 和密码。"
+
+msgid "3. Save & Apply, then restart the PON interface to register."
+msgstr "3. 点击“保存并应用”，然后重启 PON 接口完成注册。"
+
+msgid "All other fields can keep their defaults. Only change them if registration fails."
+msgstr "其他选项保持默认即可，只有注册失败时才需要修改。"
+
+msgid "Step 1: Line mode"
+msgstr "第 1 步：线路模式"
+
+msgid "Pick the mode used by your ISP. Serial number and Registration-ID are usually printed on the optical module or provided by your ISP."
+msgstr "选择运营商使用的模式。序列号和注册 ID 通常印在光模块标签上，或由运营商提供。"
+
+msgid "XG-PON / XGS-PON are used by most FTTH lines; EPON modes are for 10G-EPON lines."
+msgstr "XG-PON / XGS-PON 用于大多数 FTTH 线路；EPON 模式用于 10G-EPON 线路。"
+
+msgid "Usually printed on the optical module label. Leave empty to use the driver default."
+msgstr "通常印在光模块标签上；留空则使用驱动默认值。"
+
+msgid "Step 2: Registration & identity (XG-PON)"
+msgstr "第 2 步：注册与身份（XG-PON）"
+
+msgid "Shown for XG-PON / XGS-PON lines. LOID and password come from your ISP; the remaining fields normally stay at their defaults."
+msgstr "XG-PON / XGS-PON 线路显示此项。LOID 和密码由运营商提供，其余选项通常保持默认。"
+
+msgid "Logical ONU ID issued by your ISP. Ask your installer or ISP support if unknown."
+msgstr "运营商下发的逻辑 ONU 标识，不清楚请联系装维或运营商客服。"
+
+msgid "Password paired with the LOID. Leave empty if your ISP does not use one."
+msgstr "与 LOID 配套的密码；运营商未使用则留空。"
+
+msgid "Step 2: Registration & identity (EPON)"
+msgstr "第 2 步：注册与身份（EPON）"
+
+msgid "Shown for EPON lines only. Choose the OAM profile first; LOID fields apply to the CTC profile."
+msgstr "仅 EPON 线路显示。请先选择 OAM 模板，LOID 字段仅在 CTC 模板下生效。"
