@@ -30,6 +30,9 @@ function validateConfig(text) {
 		var line = lines[i].trim();
 		if (!line || line.charAt(0) === '#')
 			continue;
+		// `uci export` prepends a `package 'pon'` header; accept it.
+		if (/^package\s+'[A-Za-z0-9_]+'\s*$/.test(line))
+			continue;
 		var match = /^config\s+([A-Za-z0-9_]+)(?:\s+'([^']+)')?\s*$/.exec(line);
 		if (match) {
 			sections++;

@@ -1250,3 +1250,9 @@ msgstr "在线"
 
 msgid "Errors"
 msgstr "错误"
+
+msgid "Cannot reach the update server. Check the router Internet connection and the release URL."
+msgstr "无法连接更新服务器，请检查路由器联网状态和更新地址。"
+
+msgid "Update server returned an invalid response (not JSON). Check the release URL: %s"
+msgstr "更新服务器返回了无效响应（非 JSON 格式），请检查更新地址：%s"
