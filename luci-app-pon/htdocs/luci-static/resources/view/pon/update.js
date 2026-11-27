@@ -17,11 +17,13 @@ var TMP_APK = '/tmp/luci-app-pon-online.apk';
 // place as the sysupgrade images), NOT in the source-code fork which has no
 // releases. GitHub API is often unreachable from mainland China, so try
 // read-only mirrors in order. A user can force one source via UCI.
-var DEFAULT_RELEASES = 'https://api.github.com/repos/likz0421/an7581-ci/releases/latest';
+// NOTE: /releases/latest returns 404 for prereleases, and all our releases
+// are marked prerelease. Use the full /releases list and pick the newest.
+var DEFAULT_RELEASES = 'https://api.github.com/repos/likz0421/an7581-ci/releases?per_page=1';
 var RELEASE_MIRRORS = [
 	DEFAULT_RELEASES,
-	'https://gh-proxy.com/https://api.github.com/repos/likz0421/an7581-ci/releases/latest',
-	'https://ghproxy.net/https://api.github.com/repos/likz0421/an7581-ci/releases/latest'
+	'https://gh-proxy.com/https://api.github.com/repos/likz0421/an7581-ci/releases?per_page=1',
+	'https://ghproxy.net/https://api.github.com/repos/likz0421/an7581-ci/releases?per_page=1'
 ];
 
 function getConfig() {
@@ -51,7 +53,10 @@ function parseRelease(out, source) {
 	} catch (error) {
 		return null;
 	}
-	if (!info.tag_name || !Array.isArray(info.assets))
+	// /releases returns an array (newest first); /releases/latest returns one object.
+	if (Array.isArray(info))
+		info = info.filter(function(r) { return !r.draft; })[0];
+	if (!info || !info.tag_name || !Array.isArray(info.assets))
 		return null;
 	// The release may carry a standalone luci-app-pon .apk (hot update) and/or
 	// a sysupgrade firmware image. Accept either, prefer the apk for install.
