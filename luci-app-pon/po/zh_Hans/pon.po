@@ -1217,3 +1217,36 @@ msgstr "用户已取消导入。"
 
 msgid "Restore cancelled by user."
 msgstr "用户已取消恢复。"
+
+msgid "Not configured"
+msgstr "未配置"
+
+msgid "Optical signal"
+msgstr "光信号"
+
+msgid "Package"
+msgstr "安装包"
+
+msgid "PON package installed. Refresh the page."
+msgstr "PON 安装包已安装，请刷新页面。"
+
+msgid "Backup / Restore"
+msgstr "备份 / 恢复"
+
+msgid "Online update"
+msgstr "在线更新"
+
+msgid "Total lines"
+msgstr "线路总数"
+
+msgid "Weak signal"
+msgstr "弱信号"
+
+msgid "Min RX power"
+msgstr "最低接收光功率"
+
+msgid "Online"
+msgstr "在线"
+
+msgid "Errors"
+msgstr "错误"

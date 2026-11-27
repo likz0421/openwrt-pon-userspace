@@ -515,7 +515,12 @@ var DASH_CSS = [
 	'.pon-event:first-of-type{border-top:0}',
 	'.pon-event-time{color:var(--text-color-secondary,#888);white-space:nowrap;font-variant-numeric:tabular-nums}',
 	'.pon-event-change{color:var(--text-color-primary,#333)}',
-	'@media(prefers-color-scheme:dark){.pon-card{background:rgba(255,255,255,.05)}.pon-badge.pon-ok{color:#2ecc71}.pon-badge.pon-warn{color:#f39c12}.pon-badge.pon-err{color:#e74c3c}.pon-events{background:rgba(255,255,255,.05)}.pon-event-change{color:#e8e8e8}}'
+	'.pon-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:6px 0 16px}',
+	'.pon-stat{border:1px solid var(--border-color,rgba(0,0,0,.15));border-radius:8px;padding:10px 14px;background:var(--background-color-primary,#fff);text-align:center}',
+	'.pon-stat-num{font-size:24px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}',
+	'.pon-stat-label{font-size:11px;color:var(--text-color-secondary,#888);margin-top:4px}',
+	'.pon-stat.ok .pon-stat-num{color:#1e8449}.pon-stat.warn .pon-stat-num{color:#b9770e}.pon-stat.err .pon-stat-num{color:#c0392b}',
+	'@media(prefers-color-scheme:dark){.pon-card{background:rgba(255,255,255,.05)}.pon-badge.pon-ok{color:#2ecc71}.pon-badge.pon-warn{color:#f39c12}.pon-badge.pon-err{color:#e74c3c}.pon-events{background:rgba(255,255,255,.05)}.pon-event-change{color:#e8e8e8}.pon-stat{background:rgba(255,255,255,.05)}.pon-stat.ok .pon-stat-num{color:#2ecc71}.pon-stat.warn .pon-stat-num{color:#f39c12}.pon-stat.err .pon-stat-num{color:#e74c3c}}'
 ].join('');
 
 function dashTone(lifecycle, error) {
@@ -580,6 +585,39 @@ function renderEvents() {
 		]));
 	});
 	return box;
+}
+
+function renderOverview(data) {
+	var total = data.lines.length, online = 0, weak = 0, problems = 0, minRx = null;
+	data.lines.forEach(function(item) {
+		var line = item.line || {}, frontend = item.frontend || {};
+		if (line.lifecycle === 'operational')
+			online++;
+		if (item.error || line.lifecycle === 'error')
+			problems++;
+		if (!frontend.error && Object.prototype.hasOwnProperty.call(frontend, 'rx_power_dbm')) {
+			var v = Number(frontend.rx_power_dbm);
+			if (isFinite(v)) {
+				if (v < WEAK_RX_DBM)
+					weak++;
+				minRx = minRx === null ? v : Math.min(minRx, v);
+			}
+		}
+	});
+	function stat(label, value, cls) {
+		return E('div', { 'class': 'pon-stat' + (cls ? ' ' + cls : '') }, [
+			E('div', { 'class': 'pon-stat-num' }, String(value)),
+			E('div', { 'class': 'pon-stat-label' }, label)
+		]);
+	}
+	return E('div', { 'class': 'pon-overview' }, [
+		stat(_('Total lines'), total),
+		stat(_('Online'), online, online === total ? 'ok' : 'warn'),
+		stat(_('Weak signal'), weak, weak > 0 ? 'err' : 'ok'),
+		stat(_('Errors'), problems, problems > 0 ? 'err' : 'ok'),
+		stat(_('Min RX power'), minRx === null ? '-' : minRx.toFixed(1) + ' dBm',
+			minRx !== null && minRx < WEAK_RX_DBM ? 'err' : '')
+	]);
 }
 
 function renderDashboard(data) {
@@ -653,12 +691,14 @@ return view.extend({
 
 	render: function(data) {
 		recordTrend(data);
+		var overview = E('div', { 'id': 'pon-overview' }, renderOverview(data));
 		var dashboard = E('div', { 'id': 'pon-dashboard' }, renderDashboard(data));
 		var events = E('div', { 'id': 'pon-events' }, renderEvents());
 		var container = E('div', { 'id': 'pon-status' }, renderStatus(data));
 		var root = E('div', { 'class': 'cbi-map' }, [
 			E('style', {}, DASH_CSS),
 			E('h2', {}, _('PON status')),
+			overview,
 			dashboard,
 			events,
 			container
@@ -675,6 +715,7 @@ return view.extend({
 				});
 				recordEvents(status);
 				recordTrend(status);
+				dom.content(overview, renderOverview(status));
 				dom.content(dashboard, renderDashboard(status));
 				dom.content(events, renderEvents());
 				dom.content(container, renderStatus(status));
