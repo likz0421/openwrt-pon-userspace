@@ -173,14 +173,14 @@ return view.extend({
 				});
 			});
 		}).then(function() {
-			// The uploaded file is already at IMPORT_PATH; no need to rewrite it.
-			return fs.exec_direct(EXPORT_CMD, [ 'import', CONFIG, IMPORT_PATH ]);
+			// uci import reads from stdin; -f <file> is the correct way to
+			// import from a file. `uci import pon <file>` silently does nothing.
+			return fs.exec_direct(EXPORT_CMD, [ '-f', IMPORT_PATH, 'import', CONFIG ]);
 		}).then(function() {
 			return uci.load(CONFIG);
 		}).then(function() {
 			// Import only writes /etc/config/pon. Restart PON so the new
-			// mode/identity actually reach the driver - otherwise it looks
-			// "imported but had no effect".
+			// mode/identity actually reach the driver.
 			return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]);
 		}).then(function() {
 			ui.addNotification(null, E('p', {}, [
@@ -208,7 +208,7 @@ return view.extend({
 				if (!ok)
 					throw new Error(_('Restore cancelled by user.'));
 				return fs.write(IMPORT_PATH, text).then(function() {
-					return fs.exec_direct(EXPORT_CMD, [ 'import', CONFIG, IMPORT_PATH ]);
+					return fs.exec_direct(EXPORT_CMD, [ '-f', IMPORT_PATH, 'import', CONFIG ]);
 				});
 			});
 		}).then(function() {

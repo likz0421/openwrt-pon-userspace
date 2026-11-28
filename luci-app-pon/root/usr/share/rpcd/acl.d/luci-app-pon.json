@@ -42,6 +42,7 @@
 				"/usr/libexec/pon-board-identity write *": [ "exec" ],
 				"/usr/libexec/airoha-pon-debug collect": [ "exec" ],
 				"/usr/libexec/airoha-pon-debug restart": [ "exec" ],
+				"/sbin/uci -f /tmp/pon-config-import import pon": [ "exec" ],
 				"/sbin/uci import pon *": [ "exec" ],
 				"/etc/init.d/pon restart": [ "exec" ]
 			}
