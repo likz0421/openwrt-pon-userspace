@@ -178,11 +178,16 @@ return view.extend({
 		}).then(function() {
 			return uci.load(CONFIG);
 		}).then(function() {
+			// Import only writes /etc/config/pon. Restart PON so the new
+			// mode/identity actually reach the driver - otherwise it looks
+			// "imported but had no effect".
+			return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]);
+		}).then(function() {
 			ui.addNotification(null, E('p', {}, [
-				_('PON configuration imported. Restart the PON service to apply it.'),
+				_('PON configuration imported and PON restarted.'),
 				E('br'),
 				_('A backup of the previous configuration was saved to %s.').format(BACKUP_PATH)
-			]));
+			]), 'info');
 		}).catch(function(error) {
 			ui.addNotification(null, E('p', {}, _('PON config import failed: %s').format(error.message)));
 		}).finally(function() {
@@ -209,7 +214,9 @@ return view.extend({
 		}).then(function() {
 			return uci.load(CONFIG);
 		}).then(function() {
-			ui.addNotification(null, E('p', {}, _('Previous PON configuration restored.')));
+			return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]);
+		}).then(function() {
+			ui.addNotification(null, E('p', {}, _('Previous PON configuration restored and PON restarted.')), 'info');
 		}).catch(function(error) {
 			ui.addNotification(null, E('p', {}, _('PON config restore failed: %s').format(error.message)));
 		}).finally(function() {

@@ -1421,3 +1421,12 @@ msgstr "未检测到设置变更。"
 
 msgid "Details"
 msgstr "展开详情"
+
+msgid "PON configuration imported and PON restarted."
+msgstr "PON 配置已导入并重启 PON 生效。"
+
+msgid "Previous PON configuration restored and PON restarted."
+msgstr "已恢复此前的 PON 配置并重启 PON 生效。"
+
+msgid "uci import failed."
+msgstr "uci 导入失败。"
