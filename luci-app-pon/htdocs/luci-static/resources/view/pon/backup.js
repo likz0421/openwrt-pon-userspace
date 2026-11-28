@@ -131,14 +131,13 @@ return view.extend({
 			return fs.exec_direct(EXPORT_CMD, [ 'export', CONFIG ]).then(function(current) {
 				if (!confirmImport(current, text))
 					throw new Error(_('Import cancelled by user.'));
-				return fs.write_direct(BACKUP_PATH, current).then(function() {
+				return fs.write(BACKUP_PATH, current).then(function() {
 					return text;
 				});
 			});
-		}).then(function(text) {
-			return fs.write_direct(IMPORT_PATH, text).then(function() {
-				return fs.exec_direct(EXPORT_CMD, [ 'import', CONFIG, IMPORT_PATH ]);
-			});
+		}).then(function() {
+			// The uploaded file is already at IMPORT_PATH; no need to rewrite it.
+			return fs.exec_direct(EXPORT_CMD, [ 'import', CONFIG, IMPORT_PATH ]);
 		}).then(function() {
 			return uci.load(CONFIG);
 		}).then(function() {
@@ -165,7 +164,7 @@ return view.extend({
 			validateConfig(text);
 			if (!confirmImport(current, text))
 				throw new Error(_('Restore cancelled by user.'));
-			return fs.write_direct(IMPORT_PATH, text).then(function() {
+			return fs.write(IMPORT_PATH, text).then(function() {
 				return fs.exec_direct(EXPORT_CMD, [ 'import', CONFIG, IMPORT_PATH ]);
 			});
 		}).then(function() {
