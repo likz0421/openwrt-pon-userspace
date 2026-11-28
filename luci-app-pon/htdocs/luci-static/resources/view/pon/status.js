@@ -330,7 +330,17 @@ var STATUS_TABLE_CSS =
 	'.pon-st-badge.omci{background:rgba(155,89,182,.14);color:#8e44ad}' +
 	'.pon-st-badge.oam{background:rgba(243,156,18,.14);color:#b9770e}' +
 	'.pon-st-name{font-size:16px;font-weight:600}' +
-	'.pon-st-dev{font-size:12px;color:var(--text-color-secondary,#888);font-family:monospace}';
+	'.pon-st-dev{font-size:12px;color:var(--text-color-secondary,#888);font-family:monospace}' +
+	'.pon-st-details{margin:10px 0;border:1px solid var(--border-color,rgba(0,0,0,.15));border-radius:8px;background:var(--background-color-primary,#fff)}' +
+	'.pon-st-details>summary{cursor:pointer;padding:12px 14px;list-style:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap}' +
+	'.pon-st-details>summary::-webkit-details-marker{display:none}' +
+	'.pon-st-details>summary:hover{background:rgba(128,128,128,.06)}' +
+	'.pon-st-details[open]>summary{border-bottom:1px solid rgba(128,128,128,.15)}' +
+	'.pon-st-head{margin:0;flex:1}' +
+	'.pon-st-preview{font-size:12px;color:var(--text-color-secondary,#888);min-width:120px}' +
+	'.pon-st-toggle{margin-left:auto;font-size:12px;color:var(--text-color-secondary,#888)}' +
+	'.pon-st-toggle:after{content:" \\25B8"}.pon-st-details[open] .pon-st-toggle:after{content:" \\25BE"}' +
+	'@media(prefers-color-scheme:dark){.pon-st-details{background:rgba(255,255,255,.05)}}';
 
 function statusTable(title, rows, kind) {
 	var badge = E('span', { 'class': 'pon-st-badge' + (kind ? ' ' + kind : '') },
@@ -338,13 +348,31 @@ function statusTable(title, rows, kind) {
 	var name = title, dev = '';
 	var m = /^(.+?)\s*\(([^)]+)\)$/.exec(title);
 	if (m) { name = m[1]; dev = m[2]; }
-	var head = E('div', { 'class': 'pon-st-head' }, [
+	// Compact summary: badge + name + the first few key values, so the section
+	// is readable collapsed. Full table hidden behind <details> by default.
+	var summary = E('div', { 'class': 'pon-st-head' }, [
 		badge,
 		E('span', { 'class': 'pon-st-name' }, name),
 		dev ? E('span', { 'class': 'pon-st-dev' }, dev) : null
 	].filter(Boolean));
-	return E('div', { 'class': 'cbi-section' }, [
-		E('style', {}, STATUS_TABLE_CSS), head, E('table', { 'class': 'table' }, rows)
+	var preview = (rows || []).slice(0, 3).map(function(r) {
+		if (!r || !r.children || r.children.length < 2)
+			return '';
+		var cell = r.children[1];
+		var text = cell && cell.textContent != null ? cell.textContent.trim() : '';
+		return text.slice(0, 26);
+	}).filter(Boolean);
+	if (preview.length)
+		summary.appendChild(E('span', { 'class': 'pon-st-preview' }, preview.join(' · ')));
+	summary.appendChild(E('span', { 'class': 'pon-st-toggle' }, _('Details')));
+
+	return E('details', {
+		'class': 'cbi-section pon-st-details',
+		'data-pon-details': kind || 'pon'
+	}, [
+		E('style', {}, STATUS_TABLE_CSS),
+		E('summary', {}, summary),
+		E('table', { 'class': 'table' }, rows)
 	]);
 }
 

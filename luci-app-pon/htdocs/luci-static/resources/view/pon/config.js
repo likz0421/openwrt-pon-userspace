@@ -105,6 +105,19 @@ var PON_READY_CSS =
 	'.pon-ready-go{background:#2ecc71;border-color:#27ae60;color:#fff;font-weight:600;padding:6px 18px}' +
 	'@media(prefers-color-scheme:dark){.pon-ready{background:rgba(255,255,255,.05)}.pon-ready-ok{color:#2ecc71}.pon-ready-no{color:#e74c3c}}';
 
+// Card-style polish for the form sections so the page reads as a guided
+// wizard rather than a wall of upstream CBI rows.
+var PON_FORM_CSS =
+	'.pon-form .cbi-section{border:1px solid var(--border-color,rgba(0,0,0,.15));border-radius:10px;' +
+	'margin:12px 0;padding:0;background:var(--background-color-primary,#fff);overflow:hidden}' +
+	'.pon-form .cbi-section>h3,.pon-form .cbi-section>h4{margin:0;padding:12px 16px;font-size:14px;' +
+	'background:rgba(74,144,217,.08);border-left:3px solid #4a90d9}' +
+	'.pon-form .cbi-section .cbi-section-descr{padding:8px 16px 0;margin:0;font-size:12px;color:var(--text-color-secondary,#888)}' +
+	'.pon-form .cbi-section table{width:100%}' +
+	'.pon-form .cbi-section td{padding:8px 16px}' +
+	'.pon-form .cbi-value{padding:8px 16px;border-top:1px solid rgba(128,128,128,.1)}' +
+	'@media(prefers-color-scheme:dark){.pon-form .cbi-section{background:rgba(255,255,255,.05)}}';
+
 // Informational snapshot of the current PON configuration. Deliberately does
 // NOT gate the restart button: many ISPs (bridge mode, preset optics) need no
 // LOID/SN at all, so a strict "readiness" check would block valid setups.
@@ -433,7 +446,9 @@ return view.extend({
 				]));
 			}
 
-			return E([], body);
+			return E('div', { 'class': 'pon-form' }, [
+				E('style', {}, PON_CONFIG_CSS + PON_READY_CSS + PON_FORM_CSS)
+			].concat(body));
 		}, this));
 	}
 });

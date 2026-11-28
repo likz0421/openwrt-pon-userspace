@@ -1418,3 +1418,6 @@ msgstr "确认导入配置"
 
 msgid "No setting changes detected."
 msgstr "未检测到设置变更。"
+
+msgid "Details"
+msgstr "展开详情"
