@@ -1343,3 +1343,78 @@ msgstr "未设置"
 
 msgid "No internet? After saving, restart PON to re-register. Most lines need only the mode; LOID/SN are ISP-specific."
 msgstr "上不了网？保存后重启 PON 可重新注册。大多数线路只需选模式；LOID/序列号由运营商决定，通常留空。"
+
+msgid "Activation in progress"
+msgstr "正在激活"
+
+msgid "LOID not accepted"
+msgstr "LOID 未被接受"
+
+msgid "Line is up"
+msgstr "线路已连通"
+
+msgid "No downstream light detected. Check the fiber is plugged in and not bent or broken."
+msgstr "未检测到下行光信号。请检查光纤是否插好、有无折弯或损坏。"
+
+msgid "No optical signal"
+msgstr "无光信号"
+
+msgid "O1 Initial"
+msgstr "O1 初始"
+
+msgid "O2-3 Serial"
+msgstr "O2-3 序列号"
+
+msgid "O4 Ranging"
+msgstr "O4 测距"
+
+msgid "O5 Operation"
+msgstr "O5 运行"
+
+msgid "PON restarted."
+msgstr "PON 已重启。"
+
+msgid "RX power"
+msgstr "接收光功率"
+
+msgid "Registered & online"
+msgstr "已注册并在线"
+
+msgid "Registration and service are working."
+msgstr "注册与业务正常。"
+
+msgid "Restart PON to re-register?"
+msgstr "重启 PON 以重新注册？"
+
+msgid "TX power"
+msgstr "发送光功率"
+
+msgid "Temperature"
+msgstr "温度"
+
+msgid "The OLT rejected the LOID. Enter the LOID and password from your ISP in Configuration, then Save & Apply and restart PON."
+msgstr "OLT 拒绝了 LOID。请在“配置”中填入运营商提供的 LOID 和密码，保存应用后重启 PON。"
+
+msgid "The line is still activating. This can take a minute; the banner updates automatically."
+msgstr "线路仍在激活中，可能需要一分钟；本提示会自动更新。"
+
+msgid "The line reached serial-number discovery but is not registered yet. Check the fiber connection and the serial number / LOID with your ISP."
+msgstr "线路已到序列号发现阶段但尚未注册。请检查光纤连接，并向运营商核对序列号 / LOID。"
+
+msgid "Unable to read line status"
+msgstr "无法读取线路状态"
+
+msgid "Waiting for registration"
+msgstr "等待注册"
+
+msgid "View and write the board serial numbers and MAC addresses. Changes require a reboot."
+msgstr "查看和写入主板序列号与 MAC 地址，更改后需重启设备生效。"
+
+msgid "Open hardware identity editor"
+msgstr "打开硬件身份编辑器"
+
+msgid "Confirm configuration import"
+msgstr "确认导入配置"
+
+msgid "No setting changes detected."
+msgstr "未检测到设置变更。"

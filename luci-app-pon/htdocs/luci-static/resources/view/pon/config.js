@@ -177,7 +177,12 @@ return view.extend({
 			if (result.code != 0)
 				throw new Error(result.stderr || result.stdout || _('Unable to list storage.'));
 
-			return parseStorageList(result.stdout);
+			var storages = parseStorageList(result.stdout);
+			// Hardware identity is only available on boards exposing the helper.
+			return L.resolveDefault(fs.stat('/tmp/pon-board-identity.available'), null)
+				.then(function(st) {
+					return { storages: storages, hasIdentity: st != null };
+				});
 		});
 	},
 
@@ -218,8 +223,9 @@ return view.extend({
 		});
 	},
 
-	render: function(storages) {
+	render: function(data) {
 		var m, s, o, selector;
+		var storages = data.storages || [];
 
 		m = new form.Map('pon', _('PON'),
 			_('Configure the PON line on one page. Save & Apply at the bottom applies every section at once.'));
@@ -389,7 +395,21 @@ return view.extend({
 		o.datatype = 'range(1,64)';
 
 		return m.render().then(L.bind(function(map) {
-			var body = [ quickStartNode(), readyNode(), map ];
+			var body = [ quickStartNode(), readyNode() ];
+
+			// Hardware identity is grouped here instead of a standalone tab.
+			if (data.hasIdentity) {
+				body.push(E('div', { 'class': 'cbi-section' }, [
+					E('h3', {}, _('Hardware identity')),
+					E('p', {}, _('View and write the board serial numbers and MAC addresses. Changes require a reboot.')),
+					E('a', {
+						'class': 'cbi-button',
+						'href': L.url('admin', 'network', 'pon', 'hardware')
+					}, _('Open hardware identity editor'))
+				]));
+			}
+
+			body.push(map);
 
 			if (storages.length) {
 				selector = E('select', { 'class': 'cbi-input-select' },

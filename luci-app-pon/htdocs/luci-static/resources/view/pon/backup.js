@@ -78,17 +78,52 @@ function configDiff(current, incoming) {
 	return changes;
 }
 
+var DIFF_CSS =
+	'.pon-diff-list{max-height:320px;overflow:auto;border:1px solid var(--border-color,rgba(0,0,0,.15));border-radius:6px;margin:10px 0}' +
+	'.pon-diff-row{display:flex;gap:10px;padding:5px 10px;font-size:12px;font-family:monospace;border-bottom:1px solid rgba(128,128,128,.1)}' +
+	'.pon-diff-row:last-child{border-bottom:0}' +
+	'.pon-diff-tag{width:52px;flex:none;text-transform:uppercase;font-weight:600}' +
+	'.pon-diff-key{flex:1;word-break:break-all}.pon-diff-val{flex:1;word-break:break-all;color:var(--text-color-secondary,#888)}' +
+	'.pon-diff-add .pon-diff-tag{color:#1e8449}.pon-diff-remove .pon-diff-tag{color:#c0392b}.pon-diff-change .pon-diff-tag{color:#b9770e}' +
+	'.pon-diff-note{font-size:12px;color:var(--text-color-secondary,#888)}' +
+	'.pon-diff-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}';
+
 function confirmImport(current, incoming) {
 	var changes = configDiff(current, incoming);
-	var lines = [ _('Import will change %d setting(s):').format(changes.length) ];
+	var toneClass = { add: 'pon-diff-add', remove: 'pon-diff-remove', change: 'pon-diff-change' };
+	var body = [
+		E('p', {}, _('Import will change %d setting(s):').format(changes.length))
+	];
+	var list = E('div', { 'class': 'pon-diff-list' });
 	changes.slice(0, 20).forEach(function(c) {
-		lines.push('  [' + c.t + '] ' + c.k + ' = ' + c.v);
+		list.appendChild(E('div', { 'class': 'pon-diff-row ' + (toneClass[c.t] || '') }, [
+			E('span', { 'class': 'pon-diff-tag' }, c.t),
+			E('span', { 'class': 'pon-diff-key' }, c.k),
+			E('span', { 'class': 'pon-diff-val' }, c.v)
+		]));
 	});
+	if (!changes.length)
+		list.appendChild(E('div', { 'class': 'pon-diff-row' }, _('No setting changes detected.')));
 	if (changes.length > 20)
-		lines.push('  … ' + _('%d more').format(changes.length - 20));
-	lines.push('', _('A backup of the current configuration will be saved first.'));
-	lines.push(_('Continue with the import?'));
-	return window.confirm(lines.join('\n'));
+		list.appendChild(E('div', { 'class': 'pon-diff-row' }, _('%d more').format(changes.length - 20)));
+	body.push(list);
+	body.push(E('p', { 'class': 'pon-diff-note' },
+		_('A backup of the current configuration will be saved first.')));
+
+	return new Promise(function(resolve) {
+		var okBtn = E('button', {
+			'class': 'cbi-button cbi-button-action',
+			'type': 'button',
+			'click': function() { ui.hideModal(); resolve(true); }
+		}, _('Import'));
+		var cancelBtn = E('button', {
+			'class': 'cbi-button',
+			'type': 'button',
+			'click': function() { ui.hideModal(); resolve(false); }
+		}, _('Cancel'));
+		body.push(E('div', { 'class': 'pon-diff-actions' }, [ cancelBtn, okBtn ]));
+		ui.showModal(_('Confirm configuration import'), body);
+	});
 }
 
 function downloadText(text) {
@@ -129,10 +164,12 @@ return view.extend({
 			// Keep a snapshot of the current config before replacing it, and
 			// show exactly what will change so nothing is applied blindly.
 			return fs.exec_direct(EXPORT_CMD, [ 'export', CONFIG ]).then(function(current) {
-				if (!confirmImport(current, text))
-					throw new Error(_('Import cancelled by user.'));
-				return fs.write(BACKUP_PATH, current).then(function() {
-					return text;
+				return confirmImport(current, text).then(function(ok) {
+					if (!ok)
+						throw new Error(_('Import cancelled by user.'));
+					return fs.write(BACKUP_PATH, current).then(function() {
+						return text;
+					});
 				});
 			});
 		}).then(function() {
@@ -162,10 +199,12 @@ return view.extend({
 		]).then(function(results) {
 			var text = results[0], current = results[1];
 			validateConfig(text);
-			if (!confirmImport(current, text))
-				throw new Error(_('Restore cancelled by user.'));
-			return fs.write(IMPORT_PATH, text).then(function() {
-				return fs.exec_direct(EXPORT_CMD, [ 'import', CONFIG, IMPORT_PATH ]);
+			return confirmImport(current, text).then(function(ok) {
+				if (!ok)
+					throw new Error(_('Restore cancelled by user.'));
+				return fs.write(IMPORT_PATH, text).then(function() {
+					return fs.exec_direct(EXPORT_CMD, [ 'import', CONFIG, IMPORT_PATH ]);
+				});
 			});
 		}).then(function() {
 			return uci.load(CONFIG);

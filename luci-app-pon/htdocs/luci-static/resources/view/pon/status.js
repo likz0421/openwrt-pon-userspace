@@ -539,8 +539,133 @@ var DASH_CSS = [
 	'.pon-stat-num{font-size:24px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}',
 	'.pon-stat-label{font-size:11px;color:var(--text-color-secondary,#888);margin-top:4px}',
 	'.pon-stat.ok .pon-stat-num{color:#1e8449}.pon-stat.warn .pon-stat-num{color:#b9770e}.pon-stat.err .pon-stat-num{color:#c0392b}',
-	'@media(prefers-color-scheme:dark){.pon-card{background:rgba(255,255,255,.05)}.pon-badge.pon-ok{color:#2ecc71}.pon-badge.pon-warn{color:#f39c12}.pon-badge.pon-err{color:#e74c3c}.pon-events{background:rgba(255,255,255,.05)}.pon-event-change{color:#e8e8e8}.pon-stat{background:rgba(255,255,255,.05)}.pon-stat.ok .pon-stat-num{color:#2ecc71}.pon-stat.warn .pon-stat-num{color:#f39c12}.pon-stat.err .pon-stat-num{color:#e74c3c}}'
+	'.pon-hero{border:1px solid var(--border-color,rgba(0,0,0,.15));border-radius:12px;padding:18px 20px;margin:6px 0 16px;background:var(--background-color-primary,#fff);border-top:4px solid #f39c12}',
+	'.pon-hero.pon-ok{border-top-color:#2ecc71}.pon-hero.pon-err{border-top-color:#e74c3c}.pon-hero.pon-warn{border-top-color:#f39c12}',
+	'.pon-hero-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}',
+	'.pon-hero-title{font-size:15px;color:var(--text-color-secondary,#888);margin-bottom:2px}',
+	'.pon-hero-stage{font-size:26px;font-weight:600;line-height:1.25}',
+	'.pon-hero-stage.pon-ok{color:#1e8449}.pon-hero-stage.pon-warn{color:#b9770e}.pon-hero-stage.pon-err{color:#c0392b}',
+	'.pon-hero-sub{font-size:13px;color:var(--text-color-secondary,#888);margin-top:4px}',
+	'.pon-steps{display:flex;gap:4px;margin:14px 0 6px}',
+	'.pon-step{flex:1;text-align:center;font-size:11px;color:var(--text-color-secondary,#888);padding-top:6px;border-top:3px solid rgba(128,128,128,.2)}',
+	'.pon-step.done{border-top-color:#2ecc71;color:#1e8449}.pon-step.current{border-top-color:#f39c12;color:#b9770e;font-weight:600}',
+	'.pon-hero-diag{margin-top:14px;padding:10px 14px;border-radius:8px;background:rgba(243,156,18,.1);border-left:3px solid #f39c12;font-size:13px;line-height:1.6}',
+	'.pon-hero-diag.pon-ok{background:rgba(46,204,113,.1);border-left-color:#2ecc71}.pon-hero-diag.pon-err{background:rgba(231,76,60,.1);border-left-color:#e74c3c}',
+	'.pon-hero-diag strong{display:block;margin-bottom:3px}',
+	'.pon-hero-metrics{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid rgba(128,128,128,.15)}',
+	'.pon-hero-metric{min-width:110px}.pon-hero-metric-label{font-size:11px;color:var(--text-color-secondary,#888)}',
+	'.pon-hero-metric-value{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.3}',
+	'.pon-hero-go{background:#2ecc71;border-color:#27ae60;color:#fff;font-weight:600;padding:6px 18px;white-space:nowrap}',
+	'@media(prefers-color-scheme:dark){.pon-hero{background:rgba(255,255,255,.05)}.pon-hero-diag{color:#e8e8e8}.pon-card{background:rgba(255,255,255,.05)}.pon-badge.pon-ok{color:#2ecc71}.pon-badge.pon-warn{color:#f39c12}.pon-badge.pon-err{color:#e74c3c}.pon-events{background:rgba(255,255,255,.05)}.pon-event-change{color:#e8e8e8}.pon-stat{background:rgba(255,255,255,.05)}.pon-stat.ok .pon-stat-num{color:#2ecc71}.pon-stat.warn .pon-stat-num{color:#f39c12}.pon-stat.err .pon-stat-num{color:#e74c3c}}'
 ].join('');
+
+// Registration banner: put the ONE thing that matters front and center -
+// which activation stage the line reached, why it is stuck, and what to do.
+function renderHero(data) {
+	var item = data.lines && data.lines[0];
+	if (!item)
+		return E('div');
+
+	var line = item.line || {};
+	var frontend = item.frontend || {};
+	var registration = item.registration || {};
+	var datapath = item.datapath || {};
+	var omci = data.omci && data.omci[0] && data.omci[0].values || {};
+
+	var state = registration.onu_state || '';
+	var auth = omci.authentication_meaning || '';
+	var operational = line.lifecycle === 'operational';
+
+	// Activation steps O1 -> O2/3 -> O4 -> O5.
+	var steps = [ 'O1', 'O2_3', 'O4', 'O5' ];
+	var stepLabels = [ _('O1 Initial'), _('O2-3 Serial'), _('O4 Ranging'), _('O5 Operation') ];
+	var currentIndex = steps.indexOf(state);
+	if (operational)
+		currentIndex = 3;
+
+	var tone = item.error || line.lifecycle === 'error' ? 'pon-err' :
+		(operational ? 'pon-ok' : 'pon-warn');
+	var stageText = item.error ? _('Error') :
+		(operational ? _('Registered & online') : displayOnuState(state));
+
+	// Diagnosis: explain the most common blockers in plain language.
+	var diagTitle, diagBody, diagTone = tone;
+	if (item.error) {
+		diagTitle = _('Unable to read line status');
+		diagBody = item.error;
+		diagTone = 'pon-err';
+	} else if (operational) {
+		diagTitle = _('Line is up');
+		diagBody = _('Registration and service are working.');
+		diagTone = 'pon-ok';
+	} else if (auth === 'loid-not-found' || !omci.loid_configured) {
+		diagTitle = _('LOID not accepted');
+		diagBody = _('The OLT rejected the LOID. Enter the LOID and password from your ISP in Configuration, then Save & Apply and restart PON.');
+		diagTone = 'pon-warn';
+	} else if (state === 'O2_3' || state === 'O1') {
+		diagTitle = _('Waiting for registration');
+		diagBody = _('The line reached serial-number discovery but is not registered yet. Check the fiber connection and the serial number / LOID with your ISP.');
+	} else if (line.optical_signal === false) {
+		diagTitle = _('No optical signal');
+		diagBody = _('No downstream light detected. Check the fiber is plugged in and not bent or broken.');
+	} else {
+		diagTitle = _('Activation in progress');
+		diagBody = _('The line is still activating. This can take a minute; the banner updates automatically.');
+	}
+
+	function metric(label, value) {
+		return E('div', { 'class': 'pon-hero-metric' }, [
+			E('div', { 'class': 'pon-hero-metric-label' }, label),
+			E('div', { 'class': 'pon-hero-metric-value' }, value)
+		]);
+	}
+	var rx = frontend.error ? '-' :
+		(Object.prototype.hasOwnProperty.call(frontend, 'rx_power_dbm') ?
+			Number(frontend.rx_power_dbm).toFixed(2) + ' dBm' : '-');
+	var tx = frontend.error ? '-' :
+		(Object.prototype.hasOwnProperty.call(frontend, 'tx_power_dbm') ?
+			Number(frontend.tx_power_dbm).toFixed(2) + ' dBm' : '-');
+	var temp = frontend.error || frontend.temperature_celsius == null ? '-' :
+		Number(frontend.temperature_celsius).toFixed(1) + ' °C';
+
+	return E('div', { 'class': 'pon-hero ' + tone }, [
+		E('div', { 'class': 'pon-hero-head' }, [
+			E('div', {}, [
+				E('div', { 'class': 'pon-hero-title' },
+					_('PON line') + ' · ' + (item.section['.name'] || '') + ' (' + (item.section.device || '-') + ')'),
+				E('div', { 'class': 'pon-hero-stage ' + tone }, stageText),
+				E('div', { 'class': 'pon-hero-sub' },
+					displayLifecycle(line.lifecycle) + ' · ' + modeLabel(getLineModes(item).shown))
+			]),
+			E('button', {
+				'class': 'cbi-button pon-hero-go',
+				'type': 'button',
+				'click': function() {
+					if (!window.confirm(_('Restart PON to re-register?')))
+						return;
+					return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]).then(function() {
+						ui.addNotification(null, E('p', {}, _('PON restarted.')));
+					}).catch(function(error) {
+						ui.addNotification(null, E('p', {}, _('PON restart failed: %s').format(error.message)));
+					});
+				}
+			}, _('Restart PON'))
+		]),
+		E('div', { 'class': 'pon-steps' }, stepLabels.map(function(label, i) {
+			var cls = i < currentIndex ? 'done' : (i === currentIndex ? 'current' : '');
+			return E('div', { 'class': 'pon-step ' + cls }, label);
+		})),
+		E('div', { 'class': 'pon-hero-diag ' + diagTone }, [
+			E('strong', {}, diagTitle), diagBody
+		]),
+		E('div', { 'class': 'pon-hero-metrics' }, [
+			metric(_('RX power'), rx),
+			metric(_('TX power'), tx),
+			metric(_('Temperature'), temp),
+			metric(_('Service ready'), displayBoolean(datapath.service_ready === true))
+		])
+	]);
+}
 
 function dashTone(lifecycle, error) {
 	if (error || lifecycle === 'error')
@@ -710,6 +835,7 @@ return view.extend({
 
 	render: function(data) {
 		recordTrend(data);
+		var hero = E('div', { 'id': 'pon-hero' }, renderHero(data));
 		var overview = E('div', { 'id': 'pon-overview' }, renderOverview(data));
 		var dashboard = E('div', { 'id': 'pon-dashboard' }, renderDashboard(data));
 		var events = E('div', { 'id': 'pon-events' }, renderEvents());
@@ -717,6 +843,7 @@ return view.extend({
 		var root = E('div', { 'class': 'cbi-map' }, [
 			E('style', {}, DASH_CSS),
 			E('h2', {}, _('PON status')),
+			hero,
 			overview,
 			dashboard,
 			events,
@@ -734,6 +861,7 @@ return view.extend({
 				});
 				recordEvents(status);
 				recordTrend(status);
+				dom.content(hero, renderHero(status));
 				dom.content(overview, renderOverview(status));
 				dom.content(dashboard, renderDashboard(status));
 				dom.content(events, renderEvents());
