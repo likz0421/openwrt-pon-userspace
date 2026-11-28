@@ -11,6 +11,20 @@ var CONFIG = 'pon';
 var EXPORT_CMD = '/sbin/uci';
 var BACKUP_PATH = '/tmp/pon-config-backup';
 var IMPORT_PATH = '/tmp/pon-config-import';
+var RESTART_HELPER = '/usr/libexec/airoha-pon-debug';
+
+// Full PON line restart: stop pond, bring lines down, reapply config, start
+// pond and bring lines back up. A plain `/etc/init.d/pon restart` only pushes
+// mode/identity and does NOT re-attach the datapath, so the link stays down.
+function restartPon() {
+	return fs.exec_direct(RESTART_HELPER, [ 'restart' ]).then(function(output) {
+		var result;
+		try { result = JSON.parse(output); } catch (e) { result = null; }
+		if (!result || result.ok !== true)
+			throw new Error(_('PON restart failed.'));
+		return true;
+	});
+}
 
 function fileName() {
 	var now = new Date();
@@ -181,7 +195,7 @@ return view.extend({
 		}).then(function() {
 			// Import only writes /etc/config/pon. Restart PON so the new
 			// mode/identity actually reach the driver.
-			return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]);
+			return restartPon();
 		}).then(function() {
 			ui.addNotification(null, E('p', {}, [
 				_('PON configuration imported and PON restarted.'),
@@ -214,7 +228,7 @@ return view.extend({
 		}).then(function() {
 			return uci.load(CONFIG);
 		}).then(function() {
-			return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]);
+			return restartPon();
 		}).then(function() {
 			ui.addNotification(null, E('p', {}, _('Previous PON configuration restored and PON restarted.')), 'info');
 		}).catch(function(error) {

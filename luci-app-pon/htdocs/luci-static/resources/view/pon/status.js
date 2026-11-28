@@ -671,7 +671,11 @@ function renderHero(data) {
 				'click': function() {
 					if (!window.confirm(_('Restart PON to re-register?')))
 						return;
-					return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]).then(function() {
+					return fs.exec_direct('/usr/libexec/airoha-pon-debug', [ 'restart' ]).then(function(output) {
+						var result;
+						try { result = JSON.parse(output); } catch (e) { result = null; }
+						if (!result || result.ok !== true)
+							throw new Error(_('PON restart failed.'));
 						ui.addNotification(null, E('p', {}, _('PON restarted.')));
 					}).catch(function(error) {
 						ui.addNotification(null, E('p', {}, _('PON restart failed: %s').format(error.message)));

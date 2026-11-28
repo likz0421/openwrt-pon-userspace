@@ -202,7 +202,13 @@ return view.extend({
 	handleRestartPon: function() {
 		var button = document.querySelector('.pon-ready-go');
 		if (button) button.disabled = true;
-		return fs.exec_direct('/etc/init.d/pon', [ 'restart' ]).then(function() {
+		// Full line restart (pond stop -> down -> reapply -> pond start -> up).
+		// A plain `/etc/init.d/pon restart` does not re-attach the datapath.
+		return fs.exec_direct('/usr/libexec/airoha-pon-debug', [ 'restart' ]).then(function(output) {
+			var result;
+			try { result = JSON.parse(output); } catch (e) { result = null; }
+			if (!result || result.ok !== true)
+				throw new Error(_('PON restart failed.'));
 			ui.addNotification(null, E('p', {},
 				_('PON restarted. Check the status page to confirm registration.')));
 		}).catch(function(error) {
